@@ -27,6 +27,8 @@ jobs:
           REACT_APP_dev: '${{ secrets.DEV_MODE }}'
           CYPRESS_DEV_MODE: '${{ secrets.DEV_MODE }}'
           SKIP_PREFLIGHT_CHECK: '${{ secrets.SKIP_PREFLIGHT_CHECK }}'
+          # Lokaldeki .env ile aynı: build sırasında ESLint çalışmaz
+          DISABLE_ESLINT_PLUGIN: 'true'
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
