@@ -11,8 +11,7 @@ import Sidebar from '../components/common/Sidebar'
 import Question from '../components/main/Question'
 import Footer from '../components/common/Footer';
 import Pwa from '../components/common/Pwa';
-import Cizelgelerim from '../components/cizelgelerim';
-import { MantineProvider } from '@mantine/core';
+import MyKhatms from 'components/myKhatms';
 import SorryMessage from 'components/common/SorryMessage';
 import { CookiesBanner } from 'components/common/CookieConsent';
 
@@ -32,16 +31,8 @@ export const CizelgelerimPage = () => {
             {/* <SorryMessage /> */}
             <CookiesBanner />
             <Pwa />
-            <MantineProvider
-                theme={{
-                    headings:{
-                        fontFamily: 'Righteous'
-                    },
-                    
-                }}
-                >
-                <Cizelgelerim />
-            </MantineProvider>
+            {/* Çizelgeler ve alınan cüzler artık tek yerde: Hatimlerim */}
+            <MyKhatms />
             <Footer/>
         </>
     )

@@ -1,6 +1,6 @@
 {
   "name": "hatim",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "dependencies": {
     "@emotion/styled": "^11.10.6",
@@ -51,7 +51,9 @@
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.{js,jsx,ts,tsx,json}",
     "lint:fix": "eslint --fix 'src/**/*.{js,jsx,ts,tsx,json}'",
-    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc"
+    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc",
+    "e2e": "node e2e/run.js",
+    "start:local": "NODE_OPTIONS=--openssl-legacy-provider BROWSER=none PORT=3123 react-scripts start"
   },
   "eslintConfig": {
     "extends": [
@@ -82,6 +84,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "kcd-scripts": "^12.3.0",
     "prettier": "^2.8.2",
+    "puppeteer-core": "21.11.0",
     "react-hide-on-scroll": "^1.1.4"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610",

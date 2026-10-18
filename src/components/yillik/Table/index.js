@@ -25,7 +25,7 @@ const useStyles = createStyles((theme) => ({
         : theme.colors[theme.primaryColor][0],
   },
   table:{
-    backgroundColor: '#FFBF17',
+    backgroundColor: 'var(--surface)',
     position: 'relative',
   },
 
@@ -38,7 +38,7 @@ const useStyles = createStyles((theme) => ({
     position: 'fixed',
     height: '100%',
     width: '100%',
-    backgroundColor: '#91ffbb',
+    backgroundColor: 'var(--cream)',
   },
 }));
 
@@ -214,10 +214,10 @@ export default function TableSelection({ data, howManyDays, totalKhatmsBeDistrib
             }} >
                 <img src={close}></img>
             </ActionIcon>
-            <Text style={{fontFamily: 'Righteous'}} size="xs">Kapat</Text>
+            <Text style={{fontFamily: 'inherit'}} size="xs">Kapat</Text>
         </div>
     </div>
-    <Title align="center" m="xl" style={{fontFamily: 'Righteous'}}>Yıllık Hatim Çizelgesi</Title>
+    <Title align="center" m="xl" style={{fontFamily: 'inherit'}}>Yıllık Hatim Çizelgesi</Title>
 
 
 

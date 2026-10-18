@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button, createStyles} from '@mantine/core';
+import {Button} from '@mantine/core';
 import {
   YesNoButtonContainer,
   YesNoButtonLayout,
@@ -14,14 +14,7 @@ import { useDispatch } from 'react-redux';
 import { cuzlerFunctionTriggerActions } from 'features/cuzlerFunctionTrigger';
 import { AppDispatch } from 'redux/store';
 
-const useStyles = createStyles (theme => ({
-  button: {
-    color: 'black',
-  },
-}));
-
 const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatimlerVisibilities: any, toggleHatimlerVisibilities: any}) => {
-  const {classes} = useStyles ();
   const {visible, subKey, partNo, isRead} = useIsReadDialogAlert ();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -36,8 +29,8 @@ const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatiml
             <YesNoButtonLayout>
 
               <Button
-                className={classes.button}
-                style={{backgroundColor: 'yellow'}}
+                fullWidth
+                radius="md"
                 onClick={() => {
                   dispatch(isReadDialogAlertFunctions.partRead({subKey, partNo}))
                   dispatch(cuzlerFunctionTriggerActions.toggleVisibility())
@@ -47,8 +40,9 @@ const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatiml
                 {'Evet'}
               </Button>
               <Button
-                style={{backgroundColor: 'orange'}}
-                className={classes.button}
+                fullWidth
+                radius="md"
+                variant="default"
                 onClick={() => {
                   if(isRead){
                     dispatch(isReadDialogAlertFunctions.partNotRead({subKey, partNo}))

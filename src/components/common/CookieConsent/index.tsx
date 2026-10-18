@@ -22,19 +22,19 @@ export function CookiesBanner() {
         return <></>;
 
   return (
-    <Paper withBorder p="lg" radius="md" shadow="md" style={{display: cookieVisibility ? 'inline-block' : 'none', position: 'fixed', zIndex: 999, bottom: 80, left: 0, right: 0}}>
-      <Group  mb="xs">
-        <Text  >
+    <Paper withBorder p="md" radius="lg" shadow="xl" style={{display: cookieVisibility ? 'block' : 'none', position: 'fixed', zIndex: 999, bottom: 'calc(88px + var(--safe-bottom))', left: 12, right: 12, maxWidth: 560, margin: '0 auto', borderColor: 'var(--line)'}}>
+      <Group position="apart" mb="xs">
+        <Text weight={800}>
           Çerez Bildirimi
         </Text>
         { /*@ts-ignore*/ }
         <CloseButton mr={-9} mt={-9} onClick={() => setCookieVisibility(false)} />
       </Group>
-      <Text  >
+      <Text size="sm" color="dimmed">
       Bu internet sitesinde, kullanıcı deneyimini geliştirmek ve internet sitesinin verimli çalışmasını sağlamak amacıyla çerezler kullanılmaktadır. Bu internet sitesini kullanarak bu çerezlerin kullanılmasını kabul etmiş olursunuz. Çerezleri nasıl kullandığımız, sildiğimiz ve engellediğimiz ile ilgili detaylı bilgi için lütfen Çerez Politikası sayfasını okuyunuz: <a href='https://hatimdagit.com/cookies'>Çerez Politikası</a>
       </Text>
       <Group mt="md">
-        <Button variant="outline" size="xs" onClick={() => {
+        <Button radius="md" onClick={() => {
             localDb.ref('cookieStuff').set({
                 cookieBannerAccepted: true});
             setCookieVisibility(false)}}>

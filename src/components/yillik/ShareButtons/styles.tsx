@@ -1,80 +1,69 @@
-
-
-
-
-
-
-
-
 import styled from "@emotion/styled"
 
+// Paylaş / kopyala: ekranın altında sabit iki buton (diğer hatim sayfalarıyla aynı)
+const actionButton = `
+    position: fixed;
+    z-index: 30;
+    bottom: calc(12px + var(--safe-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    border-radius: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: var(--shadow);
+`
+
 export const CopyContainer = styled.div`
-    display:flex;
-    flex-direction: column;
-    justify-content:space-between;
-    align-items:center;
-    width: 90px;
-    position: fixed;
-    bottom: 10%;
-    right: 3%;
-    background-color: rgb(192, 252, 208, 0.5);
-    border-radius: 20px;
-    /* border: solid;
-    border-color: black;
-    border-width: 1px; */
-transition: 0.5s all ease-in;
-padding: 8px;
-z-index: 10;
+    ${actionButton}
+    left: calc(50% + 5px);
+    right: 16px;
+    background: var(--surface);
+    color: var(--emerald-700);
+    border: 1.5px solid var(--emerald-600);
 
-@media screen and (max-width: 960px){
-    bottom: 5%;
-    right: 12%;
-    position: fixed;
+    @media screen and (min-width: 960px){
+        left: 50%;
+        right: auto;
+        width: 300px;
+        transform: translateX(-50%);
+        border-radius: 999px;
     }
-
-
 `
 
 export const CopyItem = styled.p`
-    font-size: 0.7rem;
+    font-size: 1rem;
 `
 
 export const CopyIcon = styled.img<{iconSize:string}>`
-width: ${({iconSize}) => (iconSize)};
+    width: 22px;
+    height: 22px;
 `
 
 export const ShareContainer = styled.div`
-    flex-direction: column;
-    justify-content:space-between;
-    align-items:center;
-    width: 90px;
-    position: fixed;
-    bottom: 23%;
-    right: 3%;
-    background-color: rgb(192, 252, 208, 0.5);
-    border-radius: 20px;
-    /* border: solid;
-    border-color: black;
-    border-width: 1px; */
-transition: 0.5s all ease-in;
-padding: 8px;
-    display: none;
-    z-index:10;
+    ${actionButton}
+    left: 16px;
+    right: calc(50% + 5px);
+    background: var(--emerald-700);
+    color: #fff;
 
-@media screen and (max-width: 960px){
-    bottom: 17%;
-    right: 12%;
-    position: fixed;
-    display:flex;
+    img{
+        filter: brightness(0) invert(1);
     }
 
-
+    @media screen and (min-width: 960px){
+        display: none;
+    }
 `
 
 export const ShareItem = styled.p`
-    font-size: 0.7rem;
+    font-size: 1rem;
 `
 
 export const ShareIcon = styled.img<{iconSize: string}>`
-width: ${({iconSize}) => (iconSize)};
+    width: 22px;
+    height: 22px;
 `

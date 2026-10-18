@@ -3,3 +3,6 @@ build/
 .env
 .env*
 .mp4
+e2e/out/
+e2e/fixtures/
+.DS_Store

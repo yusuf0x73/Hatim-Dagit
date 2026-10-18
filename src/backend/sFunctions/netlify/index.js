@@ -16,6 +16,12 @@
 
 import LocDb from "@yusuf-yeniceri/easy-storage";
 
+// Yerelde netlify dev (REACT_APP_sFunctionsUrl=http://localhost:8888); telefondan açınca bilgisayarın adresi kullanılır
+const functionsBase = () => {
+    const base = process.env.REACT_APP_sFunctionsUrl || "https://sfunction.hatimdagit.com";
+    return base.replace("localhost", window.location.hostname);
+}
+
 
 
 class Netlify{
@@ -43,16 +49,22 @@ class Netlify{
     
     getResponse = async (params) => {
 
-        let url = undefined;
         let version = "";
         if(params.version != 2){
             version = "V" + params.version.toString();
         }
-        if(params.makeNewHatimArg === undefined){
-            url = `https://sfunction.hatimdagit.com/.netlify/functions/takeCuz${version}?key=${params.key}&subKey=${params.subKey}&cuzNo=${params.cuzNo}&name=${params.name}&alindi=${params.alindi}&ownerId=${params.ownerId}&dev=${params.dev}&writeTotalReadParts=${params.writeTotalReadParts}`;
-        }else{
-            url = `https://sfunction.hatimdagit.com/.netlify/functions/takeCuz${version}?key=${params.key}&subKey=${params.subKey}&cuzNo=${params.cuzNo}&name=${params.name}&alindi=${params.alindi}&ownerId=${params.ownerId}&makeNewHatimArg=${params.makeNewHatimArg}&dev=${params.dev}&writeTotalReadParts=${params.writeTotalReadParts}`;   
+
+        // İsim "&", "#" gibi karakterler içerebilir; parametreler kodlanarak gönderilir
+        const query = {key: params.key, subKey: params.subKey, cuzNo: params.cuzNo, name: params.name, alindi: params.alindi,
+                       ownerId: params.ownerId, dev: params.dev, writeTotalReadParts: params.writeTotalReadParts};
+        if(params.makeNewHatimArg !== undefined){
+            query.makeNewHatimArg = params.makeNewHatimArg;
         }
+        // Hatmi oluşturan: sunucu herkesin cüzünde isim değiştirmeye / bırakmaya izin verir
+        if(params.adminToken){
+            query.adminToken = params.adminToken;
+        }
+        const url = `${functionsBase()}/.netlify/functions/takeCuz${version}?${new URLSearchParams(query).toString()}`;
     
         let response = undefined
         let error = undefined
@@ -73,6 +85,7 @@ class Netlify{
                 break;
             case 400:
             case 401:
+            case 409:
             case 500:
                 let ownerId = LocDb.ref(`Hatim/hatimKeys/${params.key}/${params.subKey}/ownerId`).get()
                 if(typeof ownerId == "object"){

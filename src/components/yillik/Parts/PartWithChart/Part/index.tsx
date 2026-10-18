@@ -9,9 +9,7 @@ import React from 'react'
 import styled from '@emotion/styled'
 
 const PartContainer = styled.div`
-  padding: 20px;
-  border: 1px solid transparent;
-  border-radius: 5px;
+  padding: 12px 6px;
 `;
 
 const PartTemplate = styled.div`
@@ -19,19 +17,30 @@ const PartTemplate = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 2px;
 `;
 
+const PartNo = styled.span`
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--ink);
+`;
+
+const PartName = styled.span`
+  max-width: 100%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+`;
 
 const Part = ({data, no}:{data:{isTaken: boolean, name: string, charts?: any}, no:number}) => {
   return (
     <PartContainer>
       <PartTemplate>
-          <span>
-            {no}
-          </span>
-          <span style={{marginTop: '5px', color: data.isTaken ? "white": "black"}}>
-            {data.name}
-          </span>
+          <PartNo>{no}</PartNo>
+          {data.isTaken && <PartName>{data.name}</PartName>}
       </PartTemplate>
     </PartContainer>
   )

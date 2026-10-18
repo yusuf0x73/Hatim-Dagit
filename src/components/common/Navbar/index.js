@@ -4,15 +4,16 @@
 
 
 import React, {useState, useEffect} from 'react'
-import {FaBars} from 'react-icons/fa'
-import {Nav, NavbarContainer, NavLogo, MobileIcon, NavMenu, NavItem, NavLinks, NavLinksR, NavBtn, NavBtnLink, NavIcon, InstallContainer, InstallText} from './NavbarElements';
+import {Nav, NavActions, NavbarContainer, NavLogo, MobileIcon, NavMenu, NavItem, NavLinks, NavLinksR, NavBtn, NavBtnLink, NavIcon, InstallContainer, InstallText} from './NavbarElements';
 import Language from '../../../strings/index';
 import { FaGithub } from "react-icons/fa";
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 import './navbar.css'
 import { setLanguage } from "../../../common";
-import { MediaQuery, Text } from "@mantine/core";
+import { Menu2, Download } from 'tabler-icons-react';
+import { LanguageButton } from '../LanguagePicker';
+import { openAppDownload, isInstalledApp } from '../AppDownload';
 
 const Navbar = ({ toggle }) => {
 
@@ -36,12 +37,11 @@ const Navbar = ({ toggle }) => {
 
     useEffect(() => {
 
-        window.addEventListener('scroll', changeNav)
+        window.addEventListener('scroll', changeNav, {passive: true})
         window.addEventListener('resize', handleWindowSizeChange);
-        console.log(isMobile)
 
-        
         return () => {
+            window.removeEventListener('scroll', changeNav);
             window.removeEventListener('resize', handleWindowSizeChange);
         }
     }, []);
@@ -58,22 +58,23 @@ let isMobile = (width <= 768);
                 spy={true}
                 exact="true"
                 >
-                    {Language.Navbar.Logo}
+                    <img src="/icons/app-icon-192.png" alt="" width={30} height={30} />
+                    <span>{Language.Navbar.Logo}</span>
                 </NavLogo>
 
-                <InstallContainer id={"pwabutton"} onClick={()=>{
-                }}>
+                <InstallContainer id={"pwabutton"} aria-label={Language.App.Download}
+                                  style={{display: isInstalledApp() ? 'none' : 'inline-flex'}} onClick={openAppDownload}>
+                    <Download size={20} aria-label={Language.Navbar.Pwa} />
                     <InstallText>{Language.Navbar.Pwa}</InstallText>
                 </InstallContainer>
 
-                <div style={{display: 'flex', flexDirection: 'column', fontSize: '0.7em', position: 'relative'}}>
-                <MobileIcon onClick={toggle}>
-                    <FaBars />
-                </MobileIcon>
-                <MediaQuery largerThan={"sm"} styles={{display: 'none'}}>
-                    <span style={{position: 'absolute', bottom: '-6px', color: 'white', userSelect: 'none'}}>{Language.Navbar.Menu}</span>
-                </MediaQuery>
-                </div>
+                <NavActions>
+                    <LanguageButton />
+                    <MobileIcon onClick={toggle} aria-label={Language.Navbar.Menu}>
+                        <Menu2 size={22} strokeWidth={2.2} />
+                        <span>{Language.Navbar.Menu}</span>
+                    </MobileIcon>
+                </NavActions>
                 <NavMenu>
                     <NavItem>
                         <NavLinksR
@@ -92,23 +93,6 @@ let isMobile = (width <= 768);
                         exact="true"
                         offset={100}
                         to={Language.Navbar.LinkHelpers[1]}>{Language.Navbar.Links[1]}</NavLinks>
-                    </NavItem>
-                    <NavItem>
-                    <NavLinks
-                        smooth={true}
-                        duration={500}
-                        spy={true}
-                        exact="true"
-                        offset={100}
-                        to={Language.Navbar.LinkHelpers[2]}>         
-                            <Dropdown controlClassName='dropdowner' arrowClosed={<span></span>} arrowOpen={<span></span>} options={Language.Navbar.Languages} onChange={(option)=>{
-                            setLanguage(option.value)
-                            window.location.reload();
-
-                        }} value={""} placeholder={Language.Navbar.Links[2]} />
-                        
-                        </NavLinks>
-       
                     </NavItem>
                     <NavBtn>
                     <NavBtnLink

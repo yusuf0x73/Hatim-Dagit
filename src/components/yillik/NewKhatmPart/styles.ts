@@ -1,50 +1,30 @@
-
-
-
-
-
-
-
-
-
 import styled from "@emotion/styled";
 import { Add } from "@styled-icons/ionicons-outline";
 
 export const YeniHatimContainer = styled.div`
+    width: 100%;
+    max-width: 720px;
+    padding: 16px;
 `;
 
 export const YeniHatimButton = styled.button`
-    margin: 10px;
-    border: 4px solid #00ba47;
-    border-radius: 10px;
-    padding: 10px;
-    background-color: transparent;
-    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 56px;
+    border: 2px dashed var(--emerald-500);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--emerald-700);
+    font-size: 1rem;
+    font-weight: 800;
     cursor: pointer;
-
-    @media screen and (max-width: 480px){
-        margin: 40px;
-    }
 `;
 
-export const YeniHatimText = styled.span`
-    color: #00ba47;
-    margin-left: 10px;
-    
-    ::before{
-       content : '';
-       position: absolute;
-       left: 40px;
-       width: 1px;
-       height: 30px;
-       background-color: #00ba47;
-    }
-
-`;
+export const YeniHatimText = styled.span``;
 
 export const YeniHatimIcon = styled(Add)`
-    width: 30px;
-    color: #00ba47;
-
-    
+    width: 26px;
 `;

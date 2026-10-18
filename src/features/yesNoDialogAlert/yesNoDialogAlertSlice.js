@@ -66,11 +66,11 @@ const yesNoDialogAlertSlice = createSlice({
             state.visible = false;
         },
         [newYearlyKhatmV3.fulfilled]: (state) => {
-            state.newKhatm = false;
+            state.newYearlyKhatm = false;
             state.visible = false;
         },
         [newYearlyKhatmV3.rejected]: (state) => {
-            state.newKhatm = false;
+            state.newYearlyKhatm = false;
             state.visible = false;
         }
     }

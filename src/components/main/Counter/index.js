@@ -13,9 +13,10 @@ const useStyles = createStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '250px',
+    width: '100%',
+    minHeight: 52,
     padding: `6px ${theme.spacing.xs}px`,
-    borderRadius: theme.radius.sm,
+    borderRadius: 12,
     border: `1px solid ${theme.colorScheme === 'dark' ? 'transparent' : theme.colors.gray[3]}`,
     backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[5] : theme.white,
 
@@ -39,7 +40,9 @@ const useStyles = createStyles((theme) => ({
     textAlign: 'center',
     paddingRight: `${theme.spacing.sm}px !important`,
     paddingLeft: `${theme.spacing.sm}px !important`,
-    height: 28,
+    height: 36,
+    fontSize: 18,
+    fontWeight: 800,
     flex: 1,
   },
 }));
@@ -51,14 +54,16 @@ export default function QuantityInput({ min = 1, max = 100, hatimCount, setHatim
   return (
     <div className={classes.wrapper}>
       <ActionIcon
-        size={28}
+        size={38}
         variant="transparent"
+        aria-label="-1"
+        data-counter="minus"
         onClick={() => handlers.current?.decrement()}
         disabled={hatimCount === min}
         className={classes.control}
         onMouseDown={(event) => event.preventDefault()}
       >
-        <IconMinus size={16} stroke={1.5} />
+        <IconMinus size={20} stroke={2} />
       </ActionIcon>
 
       <NumberInput
@@ -72,14 +77,16 @@ export default function QuantityInput({ min = 1, max = 100, hatimCount, setHatim
       />
 
       <ActionIcon
-        size={28}
+        size={38}
         variant="transparent"
+        aria-label="+1"
+        data-counter="plus"
         onClick={() => handlers.current?.increment()}
         disabled={hatimCount === max}
         className={classes.control}
         onMouseDown={(event) => event.preventDefault()}
       >
-        <IconPlus size={16} stroke={1.5} />
+        <IconPlus size={20} stroke={2} />
       </ActionIcon>
     </div>
   );

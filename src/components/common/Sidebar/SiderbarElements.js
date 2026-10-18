@@ -1,5 +1,3 @@
-
-
 import styled from 'styled-components';
 import {Link as LinkS} from 'react-scroll';
 import {Link as LinkR} from 'react-router-dom';
@@ -10,17 +8,15 @@ export const SidebarContainer = styled.aside`
     z-index: 999;
     width: 100%;
     height: 100%;
-    background: #00ba47;
-    display: grid;
-    align-items: center;
-    top: 0;
+    background-color: var(--emerald-900);
+    background-image: var(--pattern);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     left: 0;
-    transition: 0.3s ease-in-out;
+    transition: opacity 0.25s ease, top 0.3s ease;
     opacity: ${({ isOpen }) => (isOpen  ? '100%' : '0')};
     top: ${({ isOpen }) => (isOpen ? '0' : '-100%')};
-    font-family: 'Orbitron', sans-serif;
-    font-weight:400;
-
 `;
 
 export const CloseIcon = styled(FaTimes)`
@@ -29,62 +25,63 @@ export const CloseIcon = styled(FaTimes)`
 
 export const Icon = styled.div`
     position: absolute;
-    top: 1.2rem;
-    right: 3rem;
-    background: transparent;
-    font-size: 2rem;
+    top: 12px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    font-size: 1.3rem;
     cursor: pointer;
-    outline: none;
 `;
 
 export const SidebarWrapper = styled.div`
     color: #fff;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 0 20px;
 `
 export const SidebarMenu = styled.ul`
-    display:grid;
-    grid-template-columns: 0.97fr;
-    grid-template-rows: repeat(6, 80px);
-    text-align:center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+`
 
+const sidebarLink = `
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height: 60px;
+    padding: 0 20px;
+    border-radius: 16px;
+    background: #fff;
+    border: 0;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-decoration:none;
+    list-style:none;
+    transition: background 0.2s ease;
+    color: var(--emerald-800);
+    cursor: pointer;
 
-    @media screen and (max-width: 480px){
-        grid-template-columns: 0.9fr;
-        grid-template-rows: repeat(6, 70px);
+    &:hover{
+        background: var(--emerald-50);
+        color: var(--emerald-900);
     }
 `
 
 export const SidebarLink = styled(LinkS)`
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:1.5rem;
-    text-decoration:none;
-    list-style:none;
-    transition: 0.2s ease-in-out;
-    color: #fff;
-    cursor: pointer;
-
-    &:hover{
-        color: #000;
-        transition: 0.2s ease-in-out;
-    }
+    ${sidebarLink}
 `
 
 export const SidebarLinkR = styled(LinkR)`
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:1.5rem;
-    text-decoration:none;
-    list-style:none;
-    transition: 0.2s ease-in-out;
-    color: #fff;
-    cursor: pointer;
-
-    &:hover{
-        color: #000;
-        transition: 0.2s ease-in-out;
-    }
+    ${sidebarLink}
 `
 
 export const SidebarBtnWrap = styled.div`
@@ -93,23 +90,21 @@ export const SidebarBtnWrap = styled.div`
 `
 
 export const SidebarRouter = styled(LinkR)`
-    border-radius: 50px;
-    background: #adcdff;
-    white-space: nowrap;
-    padding: 16px 64px;
-    margin-right: 20px;
-    color: #010606;
-    font-size: 16px;
-    outline: none;
-    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    background: var(--gold-500);
+    color: var(--emerald-900);
+    font-size: 1.05rem;
+    font-weight: 800;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
     text-decoration:none;
 
     &:hover{
-        transition: all 0.2s ease-in-out;
-        background: #fff;
-        color: #010606;
-
+        background: var(--gold-200);
+        color: var(--emerald-900);
     }
 `

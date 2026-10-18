@@ -80,7 +80,7 @@ Bu Gizlilik Politikası zaman zaman güncellenebilir. Yapılan değişiklikler, 
             <Navbar toggle={toggle}/>
             {/* <SorryMessage /> */}
             <Pwa  />
-            {Language.Navbar.Menu == 'Menü' && <div style={{padding: '20px', textAlign: 'left', backgroundColor: '#91ffbb'}} >
+            {Language.Navbar.Menu == 'Menü' && <div style={{padding: '24px 20px', margin: '16px auto 24px', maxWidth: 720, width: 'calc(100% - 32px)', textAlign: 'left', lineHeight: 1.7, color: 'var(--ink-soft)', backgroundColor: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', overflowWrap: 'anywhere'}} >
             {text.split("\n").map((satir, index) => (
     <React.Fragment key={index}>
       {satir.split(/(<a href='.*?'>.*?<\/a>)/g).map((parca, i) => {

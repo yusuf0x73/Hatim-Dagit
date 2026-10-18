@@ -2,653 +2,601 @@
 //                                      ALLAHU  EKBER
 //                                      ELHAMDÜLİLLAH
 
-import styled from 'styled-components';
-import {Link as LinkR} from 'react-router-dom';
-import {Link as LinkS} from 'react-scroll';
-import {Add, ChevronDown, ChevronUp} from '@styled-icons/ionicons-outline';
+import styled, {keyframes} from 'styled-components';
+import {Add} from '@styled-icons/ionicons-outline';
+import {Share, Copy} from 'tabler-icons-react';
+import {sheet, field, primaryButton} from 'theme';
 
 export const QuestionContainer = styled.div`
-    background-color: #91ffbb;
+    background: var(--cream);
     position: relative;
     min-height: ${({minHeight}) => minHeight};
-    padding-bottom: 40px;
-    @media screen and (max-width: 480px){
-    }
+    padding-bottom: calc(96px + var(--safe-bottom));
+`;
+
+export const CardWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    padding: 16px 16px 0;
 `;
 
 export const HatimContainer = styled.div`
     transform-origin: top;
-    margin-top: 0px;
     transform: ${({visibility}) => (!visibility ? 'scaleY(0)' : 'scaleY(1)')};
-    height: ${({visibility}) => {
-              if (!visibility) {
-                return '0';
-              } else {
-                return '100%';
-              }
-            }};
-    transition: height 0ms 1s ease, transform 1s 0ms ease;
+    height: ${({visibility}) => (!visibility ? '0' : '100%')};
+    transition: height 0ms 0.4s ease, transform 0.4s 0ms ease;
     overflow: hidden;
 `;
 
-export const QuestionInnerContainer = styled.div`
-    background-color: #91ffbb;
+export const QuestionInnerContainer = styled.div``;
 
-    @media screen and (max-width: 480px){
-    }
-`;
-
+/* Birden fazla hatim varsa "1. hatim  [Gizle]" başlığı */
 export const QuestionItem = styled.div`
-    padding: 30px;
-    font-size: ${({fontSize}) => fontSize};
-    text-align: center;
-    position: relative;
-    color: #000000;
-    
-
-    @media screen and (max-width: 480px){
-        font-size:${({fontSize}) => fontSize};
-        padding-bottom: 0px;
-    }
+    max-width: 720px;
+    margin: 20px auto 0;
+    padding: 0 16px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--ink);
 `;
+
+// "1. hatim / 2. hatim" başlık şeridi: ızgaradan net ayrılsın diye koyu zemin
+export const HatimIconTemplate = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 60px;
+    padding: 10px 12px 10px 16px;
+    border-radius: var(--radius);
+    background-color: var(--emerald-800);
+    background-image: var(--pattern);
+    color: #fff;
+    font-size: 1.1rem;
+    text-transform: capitalize;
+    box-shadow: var(--shadow);
+`;
+
+const smallPill = `
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    text-transform: none;
+    cursor: pointer;
+    user-select: none;
+`;
+
+export const HatimIconContainer = styled.div`
+    ${smallPill}
+    background: var(--gold-500);
+    color: var(--emerald-900);
+`;
+
+export const DeleteHatimIconContainer = styled.div`
+    ${smallPill}
+    background: rgba(255,255,255,0.12);
+    color: #ffd2cc;
+    border: 1.5px solid rgba(255,210,204,0.5);
+`;
+
+export const HatimIconText = styled.div`
+    font-size: 0.8rem;
+`;
+
+export const HideHatimIcon = styled.div``;
+
+export const ShowHatimIcon = styled.div``;
+
+export const DeleteHatimIcon = styled.div``;
 
 export const CuzlerFinishDate = styled.div`
-    margin-top: 20px;
-    margin-right: 50px;
-    margin-left: 50px;
-
-    font-size: ${({fontSize}) => fontSize};
+    margin: 16px;
     text-align: center;
-    position: relative;
-    color: #000000;
-    opacity: 0.6;
-    
-
-    @media screen and (max-width: 480px){
-        font-size:${({fontSize}) => fontSize};
-        padding-bottom: 0px;
-        margin-bottom: 30px;
-    }
+    color: var(--muted);
 `;
 
-export const BackContainer = styled.div`
-    padding-left: 50px;
-    padding-top: 5px;
-
+export const CuzlerDescription = styled.div`
+    font-size: 1.05rem;
+    text-align: center;
+    margin: 0 24px;
 `;
+
+export const BackContainer = styled.div``;
 
 export const BackButtonIcon = styled.img`
-    cursor: pointer;
     height: ${({hide}) => (hide ? '30px' : '0')};
 `;
 
+/* ---------- Lejant + yenile ---------- */
+
+export const GridToolbar = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 720px;
+    margin: 20px auto 0;
+    padding: 0 16px;
+`;
+
+export const Legend = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+`;
+
+const legendColors = {
+    free: 'background: #fff; border: 1.5px dashed #c9bfa9;',
+    taken: 'background: var(--emerald-100); border: 1.5px solid var(--emerald-200);',
+    read: 'background: var(--emerald-700); border: 1.5px solid var(--emerald-700);',
+};
+
+export const LegendItem = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+
+    &::before{
+        content: '';
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
+        ${({kind}) => legendColors[kind]}
+    }
+`;
+
+export const RefreshKhatmsContainer = styled.button`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--emerald-200);
+    background: var(--surface);
+    color: var(--emerald-700);
+    cursor: pointer;
+`;
+
+export const RefreshKhatmsItem = styled.span`
+    font-size: 0.9rem;
+    font-weight: 800;
+`;
+
+export const RefreshKhatmsIcon = styled.img``;
+
+export const GridHint = styled.p`
+    max-width: 720px;
+    margin: 12px auto 0;
+    padding: 0 16px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--muted);
+`;
+
+/* ---------- Cüz ızgarası ---------- */
+
 export const RespondContainer = styled.div`
     visibility: ${({visibility}) => (visibility ? 'visible' : 'hidden')};
-    background-color: #91ffbb;
-
-    @media screen and (max-width: 480px){
-    }
 `;
 
 export const RespondOuterContainer = styled.div`
-    padding: 10px;
-    /* background-color: red; */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
-
-    @media screen and (max-width: 480px){
-
-    }
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 12px 16px 8px;
 `;
 
 export const RespondInnerContainer = styled.div`
-    padding: 50px;
-    /* background-color: red; */
-    /* display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly; */
     display: grid;
-        grid-template-columns: auto auto auto auto auto auto auto auto auto auto ;
-        grid-auto-flow: row;
-        grid-row-gap: 30px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
 
-    @media screen and (max-width: 480px){
-        font-size:1rem;
-        display: grid;
-        grid-template-rows: auto auto auto auto auto auto auto auto auto auto ;
-        grid-auto-flow: column;
-    
-        /* display: flex;
-    flex-direction: column; */
-    text-align:center;
+    @media screen and (min-width: 480px){
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
-    @media screen and (max-width: 768px) and (min-width: 480px){
-        grid-template-columns: auto auto auto auto ;
-        grid-auto-flow: row;
-    }
-
-    @media screen and (max-width: 1240px) and (min-width: 768px){
-        grid-template-columns: auto auto auto auto auto auto ;
-        grid-auto-flow: row;
+    @media screen and (min-width: 768px){
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
     }
 `;
 
+const tileTheme = ({taken, read}) => {
+    if (read) return `
+        background: var(--emerald-700);
+        border: 1.5px solid var(--emerald-700);
+        color: #fff;
+    `;
+    if (taken) return `
+        background: var(--emerald-50);
+        border: 1.5px solid var(--emerald-200);
+        color: var(--ink);
+    `;
+    return `
+        background: var(--surface);
+        border: 1.5px dashed #c9bfa9;
+        color: var(--ink);
+    `;
+};
+
 export const ResponseItemContainer = styled.div`
+    position: relative;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: ${({taken}) => (taken ? 'var(--shadow-sm)' : 'none')};
+    ${tileTheme}
+    ${({mine}) => mine && `
+        box-shadow: 0 0 0 2.5px var(--gold-500), var(--shadow-sm);
+    `}
 `;
 
 export const ResponseItem = styled.div`
-    padding: 20px;
-    margin: 10px;
-    height: 90px;
-    border-radius: 10px;
-    background-color: ${({bgColor}) => (bgColor ? '#04d654' : '#FFBF17')} ;
-    /* #04d654; */
+    position: relative;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    text-align:center;
+    align-items: center;
     justify-content: center;
-    width: 105px;
-    box-shadow: -1px 20px 29px -8px rgba(0,0,0,1);
--webkit-box-shadow: -1px 20px 29px -8px rgba(0,0,0,1);
--moz-box-shadow: -1px 20px 29px -8px rgba(0,0,0,1);
-transition: 0.5s all ease-in;
+    gap: 2px;
+    min-height: 86px;
+    padding: 14px 6px 10px;
+    text-align: center;
     cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
 
-
-@media screen and (max-width: 480px){
-        padding: 5px;
-        height: 70px;
-        margin: 0px 6px;
+    &:active{
+        transform: scale(0.97);
     }
 
-&:hover{
-    transform: scale(1.1);
-    transition: 0.5s all ease-in;
-}
+    ${({bgColor}) => !bgColor && `
+        @media (hover: hover){
+            &:hover{ background: var(--emerald-50); }
+        }
+    `}
 `;
 
 export const ResponseLogo = styled.img`
-    height: ${({exist}) => (exist ? '50px' : '0px')};
-    src: ${({isSrc}) => isSrc};
-
+    display: none;
 `;
 
 export const ResponseText = styled.div`
-overflow-wrap: break-word;
-font-size: 1rem;
-padding: 3px;
-color:${({color}) => (color ? '#fff' : '#000')};
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.1;
 `;
 
+export const ResponseName = styled.div`
+    max-width: 100%;
+    padding: 0 4px;
+    font-size: 0.85rem;
+    font-weight: ${({taken}) => (taken ? 700 : 600)};
+    line-height: 1.25;
+    opacity: ${({taken}) => (taken ? 0.95 : 0.55)};
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+`;
+
+export const MineBadge = styled.span`
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--gold-500);
+    color: var(--emerald-900);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+`;
+
+// Alınmış cüzün altındaki "Okunuyor / Okundu" şeridi
 export const IsReadItem = styled.div`
-    background-color: ${({bgColor}) => (bgColor ? '#04d654' : '#FFBF17')} ;
-    text-align: center;
-    padding: 3px;
-    margin: 10px;
-    margin-top: 0px;
-    border-radius: 5px;
-    width: 105px;
-    box-shadow: -1px 15px 29px -8px rgba(0,0,0,1);
-    -webkit-box-shadow: -1px 15px 29px -8px rgba(0,0,0,1);
-    -moz-box-shadow: -1px 15px 29px -8px rgba(0,0,0,1);
-    transition: 0.5s all ease-in;
-
-    @media screen and (max-width: 480px){
-        margin-top: 10px;
-    }
-
-    &:hover{
-        transform: scale(1.1);
-        transition: 0.5s all ease-in;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 34px;
+    padding: 4px;
+    font-weight: 800;
+    cursor: ${({bgColor}) => (bgColor ? 'default' : 'pointer')};
+    background: ${({bgColor}) => (bgColor ? 'rgba(0,0,0,0.14)' : 'var(--gold-100)')};
+    color: ${({bgColor}) => (bgColor ? '#fff' : 'var(--gold-600)')};
+    border-top: 1px solid ${({bgColor}) => (bgColor ? 'rgba(255,255,255,0.15)' : 'var(--gold-200)')};
 `;
 
 export const IsReadText = styled.div`
-    font-size: 0.9em;
+    font-size: 0.8rem;
 `;
 
 export const Linker = styled.a`
-    color: black;
+    color: inherit;
 `;
 
+/* ---------- Yükleniyor ---------- */
+
+const spin = keyframes`
+    to { transform: rotate(360deg); }
+`;
+
+const shimmer = keyframes`
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+`;
+
+const skeletonFill = `
+    background: linear-gradient(90deg, var(--sand) 25%, #fbf6ec 50%, var(--sand) 75%);
+    background-size: 200% 100%;
+`;
+
+// Veri gelene kadar sayfanın taslağı gösterilir; boş ekran yerine neyin geleceği belli olur
+export const SkeletonPage = styled.div`
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+
+    & > *{
+        animation: ${shimmer} 1.6s ease-in-out infinite;
+    }
+`;
+
+export const SkeletonCard = styled.div`
+    ${skeletonFill};
+    height: 250px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 20px;
+`;
+
+export const SkeletonGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    animation: none !important;
+
+    @media screen and (min-width: 480px){
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    @media screen and (min-width: 768px){
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+`;
+
+export const SkeletonTile = styled.div`
+    ${skeletonFill};
+    height: 86px;
+    border-radius: var(--radius);
+    animation: ${shimmer} 1.6s ease-in-out infinite;
+`;
+
+// İskeletin üstünde duran, arkasını gösteren buzlu cam kutu
 export const LoadingContainer = styled.div`
-    visibility: ${({visibility}) => (visibility ? 'visible' : 'hidden')};
-    color: #00569c;
+    display: ${({visibility}) => (visibility ? 'flex' : 'none')};
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
     position: fixed;
-    flex:1;
+    z-index: 20;
+    top: 50%;
     left: 50%;
-    margin-top: 20%;
-    transform: translateX(-50%);
-    @media screen and (max-width: 480px){
-        margin-top: 40%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 250px;
-}
+    transform: translate(-50%, -50%);
+    width: min(340px, calc(100vw - 32px));
+    padding: 22px 20px;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.7);
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+
+    ${({spinner}) => spinner && `
+        &::before{
+            content: '';
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 4px solid var(--emerald-100);
+            border-top-color: var(--emerald-600);
+        }
+    `}
+
+    &::before{
+        animation: ${spin} 0.9s linear infinite;
+    }
 `;
 
 export const LoadingItem = styled.p`
-    font-size:3rem;
-
-    @media screen and (max-width: 480px){
-        font-size: 1.6rem;
-        
-    }
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--emerald-900);
 `;
 
+export const RetryButton = styled.button`
+    ${primaryButton};
+    min-height: 48px;
+    font-size: 1rem;
+`;
+
+/* ---------- Cüz alma diyaloğu ---------- */
+
 export const DialogBox = styled.div`
-visibility: ${({visibility}) => (visibility ? 'visible' : 'hidden')};
-height: 300px;
-width: 300px;
-position: fixed;
-background-color:#04d654;
-z-index:999;
-margin-left:39%;
-margin-top: 5%;
-box-shadow: -1px 24px 29px -8px rgba(0,0,0,1);
--webkit-box-shadow: -1px 24px 29px -8px rgba(0,0,0,1);
--moz-box-shadow: -1px 24px 29px -8px rgba(0,0,0,1);
-transition: 0.5s all ease-in;
-border-radius: 10px;
-padding: 10px;
-
-display:flex;
-flex-direction: column;
-align-items:center;
-justify-content: space-evenly;
-
-@media screen and (max-width: 480px){
-        margin-left: 8%;
-    }
+    ${sheet};
+    display: ${({visibility}) => (visibility ? 'flex' : 'none')};
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
 `;
 
 export const DialogContainer = styled.div`
-display:flex;
-flex-direction:column;
-align-items:center;
+    display:flex;
+    flex-direction:column;
+    align-items: stretch;
 `;
 
 export const DialogText = styled.div`
-color:#000;
-text-align:center;
-font-size: ${({fontSize}) => fontSize};
+    color: var(--ink);
+    text-align:center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    padding: 4px 44px 0;
 `;
 
 export const DialogLink = styled.div`
-color:#000;
-text-align:center;
-background-color: #91ffbb;
-font-size: ${({fontSize}) => fontSize};
-border-radius: 3px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--emerald-50);
+    text-align:center;
 `;
 
 export const DialogIcon = styled.img`
-width: ${({iconSize}) => iconSize};
-align-self: ${({alignEnd}) => (alignEnd ? 'flex-end' : '')};
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+    border-radius: 50%;
+    background: var(--sand);
+    cursor: pointer;
 `;
 
 export const DialogInputBox = styled.input`
-
-`;
-
-export const CopyContainer = styled.div`
-    display:flex;
-    flex-direction: column;
-    justify-content:space-between;
-    align-items:center;
-    width: 90px;
-    position: fixed;
-    bottom: 10%;
-    right: 3%;
-    background-color: rgb(192, 252, 208, 0.5);
-    border-radius: 20px;
-    /* border: solid;
-    border-color: black;
-    border-width: 1px; */
-transition: 0.5s all ease-in;
-padding: 8px;
-z-index: 10;
-
-@media screen and (max-width: 960px){
-    bottom: 5%;
-    right: 12%;
-    position: fixed;
-    }
-
-
-`;
-
-export const CopyItem = styled.p`
-    font-size: 0.7rem;
-`;
-
-export const CopyIcon = styled.img`
-width: ${({iconSize}) => iconSize};
-align-self: ${({alignEnd}) => (alignEnd ? 'flex-end' : '')};
-`;
-
-export const ShareContainer = styled.div`
-    flex-direction: column;
-    justify-content:space-between;
-    align-items:center;
-    width: 90px;
-    position: fixed;
-    bottom: 23%;
-    right: 3%;
-    background-color: rgb(192, 252, 208, 0.5);
-    border-radius: 20px;
-    /* border: solid;
-    border-color: black;
-    border-width: 1px; */
-transition: 0.5s all ease-in;
-padding: 8px;
-    display: none;
-    z-index:10;
-
-@media screen and (max-width: 960px){
-    bottom: 17%;
-    right: 12%;
-    position: fixed;
-    display:flex;
-    }
-
-
-`;
-
-export const ShareItem = styled.p`
-    font-size: 0.7rem;
-`;
-
-export const ShareIcon = styled.img`
-width: ${({iconSize}) => iconSize};
-align-self: ${({alignEnd}) => (alignEnd ? 'flex-end' : '')};
-`;
-
-export const Nav = styled.nav`
-    /* background-color: rgba(0,0,0, 0.7); */
-    background: ${({scrollNav}) => (scrollNav ? '#fff' : '#1167f2')};
-    height: 80px;
-    display:flex;
-    justify-content:center;
-    align-items: center;
-    font-size: 1rem;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    font-family: 'Orbitron', sans-serif;
-    font-weight:400;
-    transition: 0.8s all ease;
-    @media screen and (max-width: 960px){
-        transition: 0.8s all ease;
-    }
-
-    /* @media screen and (max-width: 768px){
-        margin-top: 0;
-    } */
-`;
-
-export const NavbarContainer = styled.div`
-    display:flex;
-    justify-content:space-between;
-    height: 80px;
-    z-index:  1;
-    width: 100%;
-    padding: 0 24px;
-    max-width: 1100px;
-`;
-export const NavLogo = styled (LinkS)`
-    color: #fff;
-    justify-self: flex-start;
-    cursor: pointer;
-    font-size: 1.5rem;
-    display:flex;
-    align-items: center;
-    margin-left:24px;
-    font-weight: bold;
-    text-decoration: none;
-
-    @media screen and (max-width: 480px){
-        font-size:1.1rem;
-
-    }
-`;
-export const MobileIcon = styled.div`
-    display: none;
-
-
-    @media screen and (max-width: 768px){
-        display: block;
-        position: absolute;
-        top: 0;
-        right: 0;
-        transform: translate(-100%, 60%);
-        font-size: 1.8rem;
-        color: white;
-        cursor:pointer;
-
-    }
-`;
-
-export const NavMenu = styled.ul`
-    display: flex;
-    align-items: center;
-    list-style: none;
-    text-align: center;
-    margin-right: -22px;
-
-    @media screen and (max-width: 768px){
-        display: none;
-    }
-`;
-
-export const NavItem = styled.li`
-    height: 80px;
-`;
-
-export const NavLinks = styled (LinkS)`
-    color: #fff;
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    padding: 0 1rem;
-    height: 100%;
-    cursor: pointer;
-
-    &.active{
-        border-bottom: 3px solid #01bf71;
-    }
-`;
-export const NavBtn = styled.nav`
-    display:flex;
-    align-items: center;
-
-
-    @media screen and (max-width: 768px){
-        display: none;
-    }
+    ${field};
+    font-size: 1.1rem;
 `;
 
 export const NavBtnLink = styled.div`
-    border-radius: 50px;
-    background: #FFBF17;
-    white-space: nowrap;
-    padding: 10px 22px;
-    color: #010606;
-    font-size: 16px;
-    outline: none;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    text-decoration: none;
+    ${primaryButton};
+`;
 
+/* ---------- Paylaş / kopyala çubuğu ---------- */
 
-    &:hover{
-        transition: all 0.2s ease-in-out;
-        background: #fff;
-        color: #010606;
+export const ActionBar = styled.div`
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px calc(12px + var(--safe-bottom));
+    background: var(--cream);
+    border-top: 1px solid var(--line);
+
+    @media screen and (min-width: 960px){
+        left: 50%;
+        right: auto;
+        bottom: 20px;
+        transform: translateX(-50%);
+        width: 360px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px;
+        box-shadow: var(--shadow-lg);
     }
 `;
 
-export const NavIcon = styled.a`
-    color: #01bf71;
-    display:flex;
+const actionButton = `
+    flex: 1;
+    display: flex;
     align-items: center;
-    margin: 0 -100px;
-    font-size: 40px;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 0 12px;
+    border-radius: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
 
-    @media screen and (max-width: 768px){
+    @media screen and (min-width: 960px){
+        border-radius: 999px;
+    }
+`;
+
+export const ShareContainer = styled.div`
+    ${actionButton}
+    background: var(--emerald-700);
+    color: #fff;
+
+    @media screen and (min-width: 960px){
         display: none;
     }
-    &:hover{
-        transform: scale(1.02);
-    }
 `;
+
+export const ShareItem = styled.span`
+    font-size: 1rem;
+`;
+
+export const ShareIcon = styled(Share)``;
+
+export const CopyContainer = styled.div`
+    ${actionButton}
+    background: ${({copied}) => (copied ? 'var(--emerald-50)' : 'var(--surface)')};
+    color: var(--emerald-700);
+    border: 1.5px solid var(--emerald-600);
+`;
+
+export const CopyItem = styled.span`
+    font-size: 1rem;
+`;
+
+export const CopyIcon = styled(Copy)``;
+
+/* ---------- Bu sayfaya yeni hatim ekle ---------- */
 
 export const YeniHatimWrapper = styled.div`
     display: flex;
-    flex-direction: row;
     justify-content: center;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
 `;
 
 export const YeniHatimContainer = styled.div`
+    width: 100%;
 `;
 
 export const YeniHatimButton = styled.button`
-    margin: 10px;
-    border: 4px solid #00ba47;
-    border-radius: 10px;
-    padding: 10px;
-    background-color: transparent;
-    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 56px;
+    border: 2px dashed var(--emerald-500);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--emerald-700);
+    font-size: 1rem;
+    font-weight: 800;
     cursor: pointer;
-
-    @media screen and (max-width: 480px){
-        margin: 40px;
-    }
 `;
 
-export const YeniHatimText = styled.span`
-    color: #00ba47;
-    margin-left: 10px;
-    
-    ::before{
-       content : '';
-       position: absolute;
-       left: 40px;
-       width: 1px;
-       height: 30px;
-       background-color: #00ba47;
-    }
+export const YeniHatimText = styled.span``;
 
-`;
-
-export const YeniHatimIcon = styled (Add)`
-    width: 30px;
-    color: #00ba47;
-
-    
+export const YeniHatimIcon = styled(Add)`
+    width: 26px;
 `;
 
 export const HatimHeaderContainer = styled.div`
     display: flex;
-    flex-direction: row;
-`;
-
-export const HatimIconContainer = styled.div`
-    color: black;
-
-    border: 2px solid black;
-    border-radius: 20px;
-    padding: 5px;
-    z-index: 9;
-    box-shadow: 0px 6px 11px 0px rgba(0,0,0,0.51);
--webkit-box-shadow: 0px 6px 11px 0px rgba(0,0,0,0.51);
--moz-box-shadow: 0px 6px 11px 0px rgba(0,0,0,0.51);
-
-`;
-
-export const HatimIconTemplate = styled.div`
-    display: flex;
-    justify-content: space-between;
-    margin-left: 15px;
-    margin-right: 15px;
-
-    @media screen and (min-width: 1400px){
-        margin-left: 120px;
-        margin-right: 100px;
-    }
-`;
-
-export const DeleteHatimIconContainer = styled.div`
-    color: red;
-
-    border: 2px solid red;
-    border-radius: 20px;
-    padding: 5px 10px;
-    z-index: 9;
-    box-shadow: 0px 6px 11px 0px rgba(0,0,0,0.51);
--webkit-box-shadow: 0px 6px 11px 0px rgba(0,0,0,0.51);
--moz-box-shadow: 0px 6px 11px 0px rgba(0,0,0,0.51);
-
-@media screen and (max-width: 480px){
-
-}
-
-@media screen and (min-width: 768px){
-
-}
-
-`;
-
-export const HatimIconText = styled.div`
-    position: relative;
-    font-size: 0.8rem;
-    margin-top: -15px;
-`;
-
-export const HideHatimIcon = styled.div`
-`;
-
-export const ShowHatimIcon = styled.div`
-
-`;
-
-export const DeleteHatimIcon = styled.div``;
-
-export const CuzlerDescription = styled.div`
-    font-size: 1.2rem;
-    text-align: center;
-    margin-right: 40px;
-    margin-left: 40px;
-`;
-
-export const RefreshKhatmsContainer = styled.div`
-    display:flex;
-    flex-direction: column;
-    justify-content:space-between;
-    align-items:center;
-    width: 80px;
-    background-color: rgb(192, 252, 208, 0.5);
-    border-radius: 20px;
-    transition: 0.5s all ease-in;
-    padding: 2px;
-    margin-top: 10px;
-
-
-`;
-
-export const RefreshKhatmsItem = styled.p`
-    font-size: 0.6rem;
-    color: green;
-`;
-
-export const RefreshKhatmsIcon = styled.img`
-width: ${({iconSize}) => iconSize};
-align-self: ${({alignEnd}) => (alignEnd ? 'flex-end' : '')};
 `;

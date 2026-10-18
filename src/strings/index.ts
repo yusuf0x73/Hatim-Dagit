@@ -47,6 +47,47 @@ export type LanguageType = {
 
     AutomaticKhatm: string,
 
+    Home: {
+        Title: string,
+        Subtitle: string,
+        QuickDesc: string,
+        SurahKhatm: string,
+        SurahKhatmDesc: string,
+        CustomKhatm: string,
+        CustomKhatmDesc: string,
+        OtherTypes: string,
+        YearBasedDesc: string,
+        Months3Desc: string,
+        RamazanDesc: string,
+        EvradEzkarDesc: string,
+        StepsTitle: string,
+        Steps: string[][],
+        Hadith: string,
+        HadithSource: string,
+        YearlyNote: string,
+        CreateFailed: string,
+    },
+
+    MyKhatms: {[key: string]: string},
+
+    App: {[key: string]: any},
+
+    Kit: {[key: string]: string},
+
+    CuzGrid: {
+        Hint: string,
+        Available: string,
+        Taken: string,
+        Read: string,
+        Mine: string,
+        Refresh: string,
+        Completed: string,
+        LoadError: string,
+        Retry: string,
+        ReadHint: string,
+        RefreshWait: string,
+    },
+
     "/" : {
         Question: string,
         MyInfos?: string,
@@ -100,32 +141,9 @@ export type LanguageType = {
 }
 
 
-let Language: LanguageType;
-switch (detectLanguage()) {
-    case "ar":
-    case "ar-iq":
-    case "ar-sa":
-    case "ar-ly":
-    case "ar-eg":
-    case "ar-gulf":
-        Language = Arabic;
-        break;
-
-    case "tr":
-    case "tr-TR":
-        Language = Turkish;
-        break;
-
-    
-    case "en":
-    case "en-US":
-        Language = english;
-        break;
-    
-    default:
-        Language = Turkish;
-        break;
-}
+// detectLanguage her zaman "tr", "en" ya da "ar" döner
+const languages: {[code: string]: LanguageType} = {tr: Turkish, en: english, ar: Arabic};
+const Language: LanguageType = languages[detectLanguage()] || Turkish;
 
 export default Language;
 

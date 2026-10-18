@@ -1,15 +1,36 @@
 import dataMonths3 from './strings/dataMonths3';
 import {db} from './backend';
 
+const SUPPORTED_LANGUAGES = ['tr', 'en', 'ar'];
+
+// "en-GB", "ar_AE", "TR-tr" gibi değerleri desteklenen dil koduna çevirir
+const normalizeLanguage = value => {
+  const code = String (value || '').toLowerCase ().split (/[-_]/)[0];
+  return SUPPORTED_LANGUAGES.includes (code) ? code : null;
+};
+
+/**
+ * Seçilmiş dil > cihazın dil listesi > İngilizce.
+ * Eskiden sadece "en", "en-US", "tr" gibi tam eşleşmeler tanınıyordu; "en-GB", "ar-AE" vb. Türkçe açılıyordu.
+ */
 const detectLanguage = () => {
   if (navigator.userAgent.toLowerCase ().indexOf ('googlebot') != -1) {
     return 'tr';
   }
-  let language = window.navigator.userLanguage || window.navigator.language;
-  if (localStorage.getItem ('language') != null) {
-    return localStorage.getItem ('language').toLowerCase ();
+  let saved = null;
+  try {
+    saved = normalizeLanguage (localStorage.getItem ('language'));
+  } catch (error) {}
+  if (saved) return saved;
+
+  const deviceLanguages = navigator.languages && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || navigator.userLanguage];
+  for (const language of deviceLanguages) {
+    const code = normalizeLanguage (language);
+    if (code) return code;
   }
-  return language.toLowerCase ();
+  return 'en';
 };
 
 const setLanguage = lang => localStorage.setItem ('language', lang);
@@ -167,35 +188,105 @@ const getCurrentIndexV3 = hatims => {
   return currentIndex;
 };
 
+// Ağ isteği belirtilen sürede dönmezse hata fırlatır (internet yokken sonsuza kadar beklememek için)
+const withTimeout = (promise, ms) =>
+  new Promise ((resolve, reject) => {
+    const timer = setTimeout (() => reject (new Error ('timeout')), ms);
+    promise.then (
+      value => {
+        clearTimeout (timer);
+        resolve (value);
+      },
+      error => {
+        clearTimeout (timer);
+        reject (error);
+      }
+    );
+  });
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const toIsoDate = date => date.toISOString ().slice (0, 10);
+
+// dataMonths3 tablosundaki (Diyanet'e göre girilmiş) dönemler
+const tableMonths3Periods = () =>
+  Object.values (dataMonths3).flatMap (entry => {
+    if (entry.double) {
+      return [1, 2].map (i => ({
+        startingDate: entry[`startingDate${i}`],
+        monthDays: entry[`monthDays${i}`],
+      }));
+    }
+    return [{startingDate: entry.startingDate, monthDays: entry.monthDays}];
+  });
+
+// Tabloda olmayan yıllar için Recep, Şaban ve Ramazan'ı Hicri takvimden hesaplar
+const computedMonths3Periods = from => {
+  const formatter = new Intl.DateTimeFormat ('en-u-ca-islamic-umalqura', {
+    day: 'numeric',
+    month: 'numeric',
+    timeZone: 'UTC',
+  });
+  const hijri = time => {
+    const parts = {};
+    formatter
+      .formatToParts (new Date (time))
+      .forEach (part => (parts[part.type] = part.value));
+    return {month: parseInt (parts.month), day: parseInt (parts.day)};
+  };
+
+  const periods = [];
+  let time =
+    Date.UTC (from.getFullYear (), from.getMonth (), from.getDate ()) -
+    120 * DAY_MS;
+  for (let i = 0; i < 800 && periods.length < 2; i++, time += DAY_MS) {
+    const {month, day} = hijri (time);
+    if (month !== 7 || day !== 1) continue;
+
+    const monthDays = [];
+    let monthStart = time;
+    [7, 8, 9].forEach (hijriMonth => {
+      let length = 0;
+      while (hijri (monthStart + length * DAY_MS).month === hijriMonth) length++;
+      monthDays.push (length);
+      monthStart += length * DAY_MS;
+    });
+    periods.push ({startingDate: toIsoDate (new Date (time)), monthDays});
+  }
+  return periods;
+};
+
+/**
+ * Bitmemiş ilk üç aylar dönemini döndürür: {startingDate: Recep'in 1. günü, monthDays: [Recep, Şaban, Ramazan]}
+ * Tabloda o döneme ait (Diyanet) kayıt varsa o kullanılır, yoksa Hicri takvimden hesaplanır.
+ */
 const getMonths3Date = () => {
-  let data = dataMonths3[2025];
+  const today = new Date ();
+  const periodEnd = period => {
+    const end = new Date (period.startingDate);
+    end.setDate (end.getDate () + period.monthDays.reduce ((a, b) => a + b));
+    return end;
+  };
 
-  if (data.double) {
-    let endOfYear = new Date (data.startingDate2);
-    endOfYear.setDate (endOfYear.getDate () + 90);
-
-    if (new Date () > endOfYear) {
-      data = dataMonths3[new Date ().getFullYear () + 1];
-    }
-  } else {
-    let endOfYear = new Date (data.startingDate);
-    endOfYear.setDate (endOfYear.getDate () + 90);
-
-    if (new Date () > endOfYear) {
-      data = dataMonths3[new Date ().getFullYear () + 1];
-    }
+  const tablePeriods = tableMonths3Periods ();
+  let periods = tablePeriods;
+  try {
+    periods = computedMonths3Periods (today).map (
+      computed =>
+        tablePeriods.find (
+          period =>
+            Math.abs (new Date (period.startingDate) - new Date (computed.startingDate)) <=
+            5 * DAY_MS
+        ) || computed
+    );
+  } catch (error) {
+    console.log (`getMonths3Date: ${error}`);
   }
 
-  if (data.double) {
-    if (new Date () > new Date (data.startingDate1)) {
-      data.chosen = 2;
-    } else {
-      data.chosen = 1;
-    }
-    return data;
-  } else {
-    return data;
-  }
+  return (
+    periods.find (period => periodEnd (period) >= today) ||
+    tablePeriods[tablePeriods.length - 1]
+  );
 };
 
 const isEmptyObjectLocDb = value => {
@@ -256,7 +347,7 @@ const isAdmin = () => {
     : []).includes (extractKey ());
 };
 
-const version = '1.4.6';
+const version = '2.0.0';
 
 export default detectLanguage;
 
@@ -271,6 +362,7 @@ export {
   extractKey,
   initializeLocalStorage,
   getMonths3Date,
+  withTimeout,
   version,
   isEmptyObjectLocDb,
   typeCheck,

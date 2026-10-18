@@ -15,60 +15,49 @@ import { extractKey } from 'common';
 import { editModalCuzlerActions } from 'features/editCuzlerModal';
 import { localDatabase } from 'backend';
 
-const ICON_SIZE = 60;
-
-const useStyles = createStyles((theme) => ({
+// Hızlı hatim kartıyla aynı görünüm (koyu başlık + açık gövde)
+const useStyles = createStyles(() => ({
   card: {
     position: 'relative',
-    overflow: 'visible',
-    padding: theme.spacing.xl,
-    paddingTop: theme.spacing.xl * 1.5 + ICON_SIZE / 3,
-    marginBottom: '0px',
-    width: '75%',
-    wordBreak: 'break-all',
-
-    '@media (min-width: 480px)':{
-      width: '30%',
-    }
+    width: '100%',
+    maxWidth: 688,
+    overflow: 'hidden',
+    borderRadius: 24,
+    border: '1px solid var(--line)',
+    background: 'var(--surface)',
+    boxShadow: 'var(--shadow)',
   },
-
+  head: {
+    padding: '22px 20px 20px',
+    textAlign: 'center',
+    color: '#fff',
+    backgroundColor: 'var(--emerald-800)',
+    backgroundImage: 'var(--pattern), linear-gradient(135deg, var(--emerald-600), var(--emerald-900))',
+  },
   icon: {
-    position: 'absolute',
-    top: -ICON_SIZE / 3,
-    left: `calc(50% - ${ICON_SIZE / 2}px)`,
+    margin: '0 auto 10px',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    color: 'var(--gold-200)',
   },
-
-  title: {
-    fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-    lineHeight: 1,
-  },
-
-  editButton: {
-    position: 'absolute',
-    right: '10px',
-    top: '4px',
-    // boxShadow: ' inset 2px 2px 2px 0px #ABABAB, inset -2px -2px 2px 0px #ABABAB',
-    // border: 'none',
-    // outline: 'none',
-  },
-
-  deleteButton: {
-    position: 'absolute',
-    left: '30px',
-    top: '4px',
-  },
+  title: {fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.3, overflowWrap: 'anywhere'},
+  description: {marginTop: 8, color: 'rgba(255,255,255,0.85)', overflowWrap: 'anywhere'},
+  adminRow: {display: 'flex', justifyContent: 'space-between', marginBottom: 12},
+  body: {padding: '18px 20px 20px'},
+  percent: {fontSize: '1.6rem', fontWeight: 800, color: 'var(--emerald-700)', lineHeight: 1},
 }));
+
+const badgeStyles = {inner: {textTransform: 'none', fontWeight: 800}};
 
 const BadgeSpecifier = ({otherCaseDuaLeftDays, _duaLeftDays}) => {
   switch (otherCaseDuaLeftDays) {
     case 0:
-      return <Badge size="sm" color="green" variant="filled" > {Language["/cuz"].CuzlerHatimCard.dua[0]} {_duaLeftDays} {Language["/cuz"].CuzlerHatimCard.dua[1]}</Badge>
+      return <Badge size="lg" radius="xl" color="gold" variant="light" styles={badgeStyles}> {Language["/cuz"].CuzlerHatimCard.dua[0]} {_duaLeftDays} {Language["/cuz"].CuzlerHatimCard.dua[1]}</Badge>
     case 1:
-      return <Badge size="sm" color="green" variant="filled" >{Language["/cuz"].CuzlerHatimCard.dua[2]}</Badge> 
+      return <Badge size="lg" radius="xl" color="gold" variant="light" styles={badgeStyles}>{Language["/cuz"].CuzlerHatimCard.dua[2]}</Badge> 
     case 2:
-      return <Badge size="sm" color="green" variant="filled" >{Language["/cuz"].CuzlerHatimCard.dua[3]}</Badge>
+      return <Badge size="lg" radius="xl" color="gold" variant="light" styles={badgeStyles}>{Language["/cuz"].CuzlerHatimCard.dua[3]}</Badge>
     default:
-      return <Badge size="sm" color="green" variant="filled" >{Language["/cuz"].CuzlerHatimCard.dua[4]} {_duaLeftDays} {Language["/cuz"].CuzlerHatimCard.dua[5]}</Badge>
+      return <Badge size="lg" radius="xl" color="gold" variant="light" styles={badgeStyles}>{Language["/cuz"].CuzlerHatimCard.dua[4]} {_duaLeftDays} {Language["/cuz"].CuzlerHatimCard.dua[5]}</Badge>
       break;
   }
 }
@@ -129,89 +118,64 @@ export default function StatsCard({header, description, progress, leftCuzs, duaL
   const allParts = localDatabase.getParts(hatimsData);
 
   return (
-    <Paper m="11%" my="0" radius="md" withBorder  className={classes.card} mt={ICON_SIZE / 1.5}>
-
-
-          {
-            tokenExists != 0 && <Button className={classes.deleteButton} color="red" leftIcon={<Logout width="15px"></Logout>} 
-                                    radius="xl" size="xs" styles={{
-                                      label: {marginLeft: '-7px'},
-                                      root: {marginLeft: '-20px', padding: '4px', fontSize: '0.7rem'},
-                                      outline: {padding: '30px'},
-                                    }}
-                                    onClick={()=>{
-                                      dispatch(yesNoDialogAlertActions.changeText(Language["/cuz"].DeleteKhatmAlert.Question))
-                                      toggleYesHandler(yesHandlerPayload)
-                                      toggleNoHandler(noHandlerPayload)
-                                      dispatch(yesNoDialogAlertActions.toggleVisibility())
-                                    }}
-                                    id="deleteHatim"
-                                    >
-                                      {Language["/cuz"].CuzlerHatimCard.deleteHatim}
-                                  </Button>
-          }
-            
-
-      <ThemeIcon color="green" className={classes.icon} size={ICON_SIZE} radius={ICON_SIZE}>
-        <Book size={34} />
-      </ThemeIcon>
-
-      {
-            tokenExists != 0 && <Button className={classes.editButton} variant="outline" color="blue" leftIcon={<Pencil width="15px"></Pencil>} 
-              radius="xl" size="xs" styles={{
-                label: {marginLeft: '-7px'},
-                root: {marginLeft: '-20px', padding: '4px', fontSize: '0.7rem'},
-                outline: {padding: '30px'},
-              }}
+    <Paper className={classes.card}>
+      <div className={classes.head}>
+        {tokenExists != 0 &&
+          <div className={classes.adminRow}>
+            <Button color="red" variant="white" leftIcon={<Logout size={16} />} radius="xl" size="xs" id="deleteHatim"
+              onClick={()=>{
+                dispatch(yesNoDialogAlertActions.changeText(Language["/cuz"].DeleteKhatmAlert.Question))
+                toggleYesHandler(yesHandlerPayload)
+                toggleNoHandler(noHandlerPayload)
+                dispatch(yesNoDialogAlertActions.toggleVisibility())
+              }}>
+              {Language["/cuz"].CuzlerHatimCard.deleteHatim}
+            </Button>
+            <Button variant="white" leftIcon={<Pencil size={16} />} radius="xl" size="xs"
               onClick={()=>{
                 dispatch(editModalCuzlerActions.changeHeader(header))
                 dispatch(editModalCuzlerActions.changeDescription(description))
                 dispatch(editModalCuzlerActions.changeDate(keeperDuaLeftDays))
                 dispatch(editModalCuzlerActions.toggleVisibility())
-              }}
-              > {Language["/cuz"].CuzlerHatimCard.changeHatim}</Button>
-      }
+              }}>
+              {Language["/cuz"].CuzlerHatimCard.changeHatim}
+            </Button>
+          </div>}
 
-      <Text align="center" weight={700} className={classes.title}>
-        {header.split('\n').map(str => <p>{str}</p>)}
-      </Text>
-      <Text sx={theme => ({
-          color: theme.colors.dark[3],
-      })} align="center" size="sm" mt="10px">
-        { description != null && description.split('\n').map(str => <p>{str}</p>)}
-      </Text>
+        <ThemeIcon className={classes.icon} size={52} radius={52}>
+          <Book size={28} />
+        </ThemeIcon>
+        <div className={classes.title}>
+          {header.split('\n').map((str, i) => <p key={i}>{str}</p>)}
+        </div>
+        {description != null && description !== '' && <div className={classes.description}>
+          {description.split('\n').map((str, i) => <p key={i}>{str}</p>)}
+        </div>}
+      </div>
 
-      <Group position="apart" mt="xl">
-        <Text size="sm" color="dimmed">
-        {Language["/cuz"].CuzlerHatimCard.takenParts}
-        </Text>
-        <Text size="sm" >
-          %{(Math.round(progress * 100) / 100).toFixed(1)}
-        </Text>
-      </Group>
+      <div className={classes.body}>
+        <Group position="apart" align="flex-end">
+          <Text size="sm" weight={700} color="dimmed">{Language["/cuz"].CuzlerHatimCard.takenParts}</Text>
+          <span className={classes.percent}>%{(Math.round(progress * 100) / 100).toFixed(0)}</span>
+        </Group>
 
-      <Progress value={progress} mt={5} color="green" />
+        <Progress value={progress} mt={10} size={12} radius="xl" color="emerald" />
 
-      <Group position="apart" mt="md">
-        <Badge size="sm" color="green" variant="filled" >{leftCuzs}  {Language["/cuz"].CuzlerHatimCard.leftParts}</Badge>
-        <BadgeSpecifier otherCaseDuaLeftDays={otherCaseDuaLeftDays} _duaLeftDays={_duaLeftDays} />
-      </Group>
+        <Group position="apart" mt="md" spacing="xs">
+          <Badge size="lg" radius="xl" color="emerald" variant="light" styles={badgeStyles}>{leftCuzs}  {Language["/cuz"].CuzlerHatimCard.leftParts}</Badge>
+          <BadgeSpecifier otherCaseDuaLeftDays={otherCaseDuaLeftDays} _duaLeftDays={_duaLeftDays} />
+        </Group>
 
-      {allParts.data != undefined && <Text mt="xl" size="sm" color="dimmed">
-                                      {Language["/cuz"].CuzlerHatimCard.yourParts}
-                                    </Text>
-      }
-        { allParts.data != undefined && allParts.data.sort((a,b) => Object.keys(a)[0] - Object.keys(b)[0]).map((part,index) => {
-          let test = 1;
-          return <>
-            
-            <Badge size="md" mt="xs" color="blue" variant="filled" >{Number(Object.keys(part))+1}.Hatim</Badge>
-            <Group mt="xs">
-              {part[Object.keys(part)[0]].map(no => <Badge size="md" color="green" variant="filled" >{no}</Badge>)}
-            </Group>
-          </>
-        })}
-        
+        {allParts.data != undefined && allParts.data.length > 0 && <Text mt="lg" size="sm" weight={700} color="dimmed">
+          {Language["/cuz"].CuzlerHatimCard.yourParts}
+        </Text>}
+        {allParts.data != undefined && allParts.data.sort((a,b) => Object.keys(a)[0] - Object.keys(b)[0]).map((part, index) => (
+          <Group key={index} mt="xs" spacing={6}>
+            <Badge size="lg" radius="xl" color="emerald" variant="filled" styles={badgeStyles}>{Number(Object.keys(part))+1}. Hatim</Badge>
+            {part[Object.keys(part)[0]].map(no => <Badge key={no} size="lg" radius="xl" color="gold" variant="light" styles={badgeStyles}>{no}. cüz</Badge>)}
+          </Group>
+        ))}
+      </div>
     </Paper>
   );
 }

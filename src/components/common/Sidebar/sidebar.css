@@ -1,11 +1,28 @@
-
-
-
-
-.dropdowner{
+aside .dropdowner{
     background-color: transparent;
     border: 0;
-    color: white;
+    color: var(--emerald-800);
     margin-right: 0;
     text-align: center;
+    padding: 0;
+    cursor: pointer;
+}
+
+aside .Dropdown-root{
+    width: 100%;
+}
+
+aside .Dropdown-placeholder{
+    font-weight: 800;
+}
+
+aside .Dropdown-menu{
+    border-radius: 12px;
+    margin-top: 10px;
+}
+
+aside .Dropdown-option{
+    padding: 12px 16px;
+    font-size: 1.05rem;
+    color: var(--ink);
 }

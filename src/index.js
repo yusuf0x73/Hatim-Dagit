@@ -11,14 +11,22 @@ import localDb from '@yusuf-yeniceri/easy-storage';
 import {store} from './redux/store';
 import {Provider} from 'react-redux';
 import {NotificationsProvider} from '@mantine/notifications';
+import {MantineProvider} from '@mantine/core';
+import {mantineTheme} from './theme';
+
+// Arapça sağdan sola okunur; ekran okuyucular için sayfanın dili de bildirilir
+document.documentElement.lang = detectLanguage ();
+document.documentElement.dir = detectLanguage () === 'ar' ? 'rtl' : 'ltr';
 
 ReactDOM.render (
   <DataServiceContext.Provider value={dataService}>
     <DatabaseContext.Provider value={db}>
       <Provider store={store}>
-        <NotificationsProvider position="top-right">
-          <App />
-        </NotificationsProvider>
+        <MantineProvider theme={mantineTheme}>
+          <NotificationsProvider position="top-center" autoClose={3500}>
+            <App />
+          </NotificationsProvider>
+        </MantineProvider>
       </Provider>
     </DatabaseContext.Provider>
   </DataServiceContext.Provider>,
@@ -53,8 +61,6 @@ firebaseToDo ();
  * firebase part end
  */
 
-let pwa_button = document.getElementById ('pwabutton');
-
 if ('serviceWorker' in navigator) {
   console.log ('Will the service worker register?');
   navigator.serviceWorker
@@ -67,38 +73,8 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-if (isSafari () && !isStandalone ()) {
-  pwa_button.style.display = 'inline';
-  pwa_button.addEventListener ('click', e => {
-    e.preventDefault ();
-
-    let pwa_component = document.getElementById ('pwa_component');
-    pwa_component.style.display = 'flex';
-  });
-}
-
-window.addEventListener ('beforeinstallprompt', e => {
-  e.preventDefault ();
-  let deferredPrompt = e;
-  pwa_button.style.display = 'inline';
-
-  pwa_button.addEventListener ('click', e => {
-    if (isSafari ()) {
-      alert (Language.Pwa.Alert);
-      return;
-    }
-
-    deferredPrompt.prompt ();
-    deferredPrompt.userChoice.then (choiceResult => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log ('user accepted the a2hs prompt');
-      } else {
-        console.log ('user rejected the a2hs prompt');
-      }
-      deferredPrompt = null;
-    });
-  });
-});
+// Kurulum artık Google Play (Android) ya da "Ana ekrana ekle" yönergesi (iPhone) ile; tarayıcının kendi kurulum çubuğu gösterilmez
+window.addEventListener ('beforeinstallprompt', e => e.preventDefault ());
 
 /**
  * message part

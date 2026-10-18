@@ -79,11 +79,11 @@ export class Database {
   };
 
   cuzIptal = async (no, subKey) => {
-    await this.api.cuzIptal (no, subKey);
+    return await this.api.cuzIptal (no, subKey);
   };
 
   cuzIptalTasarruflu = async (no, subKey, full = false) => {
-    await this.api.cuzIptalTasarruflu (no, subKey, full);
+    return await this.api.cuzIptalTasarruflu (no, subKey, full);
   };
 
   cuzAlV3 = async (isim, no, subKey, alindi = true, makeNewHatim = false) => {
@@ -163,6 +163,38 @@ export class Database {
 
   stopMakingNewKhatm = async () => {
     return await this.api.stopMakingNewKhatm ();
+  };
+
+  yeniOzelHatim = async params => {
+    return await this.api.yeniOzelHatim (params);
+  };
+
+  yeniOzelAltHatim = async params => {
+    return await this.api.yeniOzelAltHatim (params);
+  };
+
+  ozelHatimDegistir = async params => {
+    return await this.api.ozelHatimDegistir (params);
+  };
+
+  yeniUcAylarHatim = async params => {
+    return await this.api.yeniUcAylarHatim (params);
+  };
+
+  listenHatim = (hatimKey, onData, onError) => {
+    return this.api.listenHatim (hatimKey, onData, onError);
+  };
+
+  fetchChartAt = async params => {
+    return await this.api.fetchChartAt (params);
+  };
+
+  markChartAt = async params => {
+    return await this.api.markChartAt (params);
+  };
+
+  setReaction = async params => {
+    return await this.api.setReaction (params);
   };
 
   markChart = async params => {

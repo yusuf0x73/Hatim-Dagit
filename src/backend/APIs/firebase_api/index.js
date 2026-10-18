@@ -34,6 +34,27 @@ const netlifyParams = {
     dev: process.env.REACT_APP_dev
 }
 
+// 1..N numaralı boş parçalar (Firebase'de sayısal anahtarlar)
+const emptyParts = slots => {
+  const parts = {};
+  for (let i = 1; i <= slots; i++) parts[i] = {name: '', isTaken: false};
+  return parts;
+};
+
+// Bu cihaz hatmi oluşturduysa adminToken'ı: V3 hatimlerde Hatim/<key>/adminToken, diğerlerinde Hatim/adminToken listesi
+const localAdminToken = hatimKey => {
+  try {
+    const direct = LocDb.ref(`Hatim/${hatimKey}/adminToken`).get();
+    if (typeof direct === 'string' && direct.length > 0) return direct;
+    const list = LocDb.ref("Hatim/adminToken").get();
+    if (Array.isArray(list)) {
+      const found = list.find(item => item && Object.keys(item)[0] === hatimKey);
+      if (found) return found[hatimKey];
+    }
+  } catch (error) {}
+  return undefined;
+};
+
 class FirebaseAPI{
     
     constructor(){
@@ -72,7 +93,8 @@ class FirebaseAPI{
   
     extractKey = () => {
       const link = window.location.toString();
-      const substring = ['/cuzv2', '/cuz','/ramazan','/ucaylarhergun1cuz', '/yillik', ];
+      // '/ucaylar', '/ucaylarhergun1cuz'dan sonra gelmeli
+      const substring = ['/cuzv2', '/cuz','/ramazan','/ucaylarhergun1cuz', '/yillik', '/ucaylar', '/ozel'];
       const found = substring.find(substring => link.indexOf(substring) !== -1);
       if(found){
         const index = link.indexOf(found);
@@ -107,19 +129,19 @@ class FirebaseAPI{
     tasarrufluHatimGetir = async () => {
       try {
         let hatimKey = this.extractKey();
-        let activeSubKhatmKeySnapshot = await this.db.ref( `hatim/${hatimKey}/activeSubKhatmKey` ).get();
+        // Birbirinden bağımsız okumalar sırayla değil aynı anda yapılır
+        let [activeSubKhatmKeySnapshot, makeNewHatim, adminToken, deleteProp, khatmSubKeys] = await Promise.all([
+          this.db.ref( `hatim/${hatimKey}/activeSubKhatmKey` ).get(),
+          this.db.ref( `hatim/${hatimKey}/makeNewHatim` ).get(),
+          this.db.ref( `hatim/${hatimKey}/adminToken` ).get(),
+          this.db.ref( `hatim/${hatimKey}/delete` ).get(),
+          this.db.ref( `hatim/${hatimKey}/khatmSubKeys` ).get(),
+        ]);
         let activeSubKhatmKey = activeSubKhatmKeySnapshot.val();
 
         if(activeSubKhatmKey == null){
-          console.log("heeyoo")
           throw new VersionError("Khatm data is not right")
         }
-
-        let makeNewHatim = await this.db.ref( `hatim/${hatimKey}/makeNewHatim` ).get();
-        let adminToken = await this.db.ref( `hatim/${hatimKey}/adminToken` ).get();
-        let deleteProp = await this.db.ref( `hatim/${hatimKey}/delete` ).get();
-
-        let khatmSubKeys = await this.db.ref( `hatim/${hatimKey}/khatmSubKeys` ).get();
 
         let data = {khatms: []};
         let hatimFilled = true;
@@ -291,6 +313,8 @@ class FirebaseAPI{
       if(!mevcutHatim){
         hatimKey = await this.db.ref("hatim").push().key;
         adminToken = generateHash({length: 16});
+        // Kök ve ilk hatim tek yazmada: yarıda kalırsa içi boş (cüzsüz) hatim oluşmaz
+        const firstSubKey = this.db.ref(`hatim/${hatimKey}`).push().key;
         await this.db.ref(`hatim/${hatimKey}`).set({
           type: "yillik",
           version: 3.0,
@@ -301,8 +325,13 @@ class FirebaseAPI{
           howManyDays: howManyDays,
           totalKhatmsBeDistributed: totalKhatmsBeDistributed,
           donerli: donerli,
-          makeNewHatim: makeNewHatim
+          makeNewHatim: makeNewHatim,
+          [firstSubKey]: dataFormat_yillikHatim,
         });
+        return {
+          data: {hatimKey: hatimKey, hatimSubKeys: [firstSubKey], adminToken: adminToken, header: header},
+          error: undefined
+        };
       }else{
         hatimKey = this.extractKey();
         hatimKey = hatimKey.replace("/", "");
@@ -341,6 +370,85 @@ class FirebaseAPI{
       
     }
 
+
+    // Programlanabilir hatim (cüz, hizb, sayfa, sûre, sayfa grubu ya da Yâsîn/Fetih gibi sûre okumaları).
+    // Parça alma yıllık hatimdeki takeCuzV3 ile yapılır; bu yüzden aynı "parts" yapısı kullanılır.
+    yeniOzelHatim = async ({header, description, duaDate, unit, slots, khatmCount}) => {
+      try {
+        const hatimKey = this.db.ref("hatim").push().key;
+        const adminToken = generateHash({length: 16});
+        // Kurallar kökte yalnızca header / description / startingDate değişikliğine izin verir; dua günü startingDate'te tutulur
+        const data = {type: "ozel", version: 3.0, adminToken, header, description, startingDate: duaDate || '', unit, makeNewHatim: false};
+        for (let k = 0; k < Math.max(khatmCount || 1, 1); k++) {
+          data[this.db.ref(`hatim/${hatimKey}`).push().key] = {parts: emptyParts(slots)};
+        }
+        await this.db.ref(`hatim/${hatimKey}`).set(data);
+        // Yönetici bilgisi yıllık hatimle aynı yerde: silme / düzenleme butonları için
+        LocDb.ref(`Hatim/${hatimKey}/adminToken`).set(adminToken);
+        return {data: {hatimKey, adminToken, header}, error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
+    }
+
+    yeniOzelAltHatim = async ({slots}) => {
+      try {
+        const hatimKey = this.extractKey();
+        const subKey = this.db.ref(`hatim/${hatimKey}`).push().key;
+        await this.db.ref(`hatim/${hatimKey}/${subKey}`).set({parts: emptyParts(slots)});
+        return {data: subKey, error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
+    }
+
+    ozelHatimDegistir = async ({header, description, duaDate}) => {
+      try {
+        await this.db.ref(`hatim/${this.extractKey()}`).update({header, description, startingDate: duaDate || ''});
+        return {data: "success", error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
+    }
+
+    // Yeni 3 aylar hatimleri (sayfa, sûre, yarım/çeyrek cüz). Parça alma yıllık hatimdeki
+    // takeCuzV3 sunucu fonksiyonuyla yapılır; bu yüzden aynı "parts" yapısı kullanılır.
+    yeniUcAylarHatim = async ({header, description, plan, rotating, slots, startingDate, monthDays}) => {
+      try {
+        const hatimKey = this.db.ref("hatim").push().key;
+        const subKey = this.db.ref(`hatim/${hatimKey}`).push().key;
+        const adminToken = generateHash({length: 16});
+
+        const parts = {};
+        for (let i = 1; i <= slots; i++) {
+          parts[i] = {name: '', isTaken: false};
+        }
+
+        await this.db.ref(`hatim/${hatimKey}`).set({
+          type: "ucaylar",
+          version: 3.0,
+          plan: plan,
+          rotating: !!rotating,
+          adminToken: adminToken,
+          header: header,
+          description: description,
+          startingDate: startingDate,
+          monthDays: monthDays,
+          makeNewHatim: false,
+          [subKey]: {parts: parts},
+        });
+
+        LocDb.ref("Hatim/adminToken").modify((aD)=>{
+          if(!Array.isArray(aD)) aD = []
+          aD.push({[hatimKey]: adminToken})
+          return aD;
+        })
+
+        return {data: {hatimKey, subKey, adminToken, header}, error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
+    }
 
     hatimDegistir = async (baslik, bitisTarihi, description, subKey) => {
       try {
@@ -390,6 +498,7 @@ class FirebaseAPI{
             dev: netlifyParams.dev,
             makeNewHatimArg: makeNewHatim ?? undefined,
             writeTotalReadParts: writeTotalReadParts.toString(),
+            adminToken: localAdminToken(hatimKey),
       }
 
       // console.log(`params: ${params.dev}`)
@@ -413,11 +522,11 @@ class FirebaseAPI{
         if(result.code == 200){
           return {code: 0};
         }else{
-           // code exists if there is a normal error
+           // status: 401 başkasının cüzü, 409 aynı anda başkası aldı
            if (result.error.code == undefined){
-            return {code: -1, errorKey: _errorKey};
+            return {code: -1, errorKey: _errorKey, status: result.code};
           }else{
-            return {code: -1, errorKey: undefined};
+            return {code: -1, errorKey: undefined, status: result.code};
           }
         }
 
@@ -476,7 +585,8 @@ class FirebaseAPI{
             dev: netlifyParams.dev,
             makeNewHatimArg: makeNewHatim ?? undefined,
             version: 3,
-            writeTotalReadParts: 'false'
+            writeTotalReadParts: 'false',
+            adminToken: localAdminToken(hatimKey),
       }
 
       // console.log(`params: ${params.dev}`)
@@ -500,7 +610,8 @@ class FirebaseAPI{
         if(result.code == 200){
           return {data: 200, error: undefined};
         }else{
-          return {data: undefined, error: _errorKey};
+          // code: 401 başkasının cüzü, 409 aynı anda başkası aldı
+          return {data: undefined, error: _errorKey, code: result.code};
         }
 
       } catch (error) {
@@ -526,19 +637,22 @@ class FirebaseAPI{
       await this.db.ref("hatim/" + hatimKey + "/bitti").set(true);
     }
   
+    // Bağlantı yoksa birkaç kez, aralıklı dener (eskiden beklemeden sonsuz döngüde sayfayı kilitliyordu)
     ziyaretSayisiGetir = async () => {
-      while(true){
-      try {
-        let ziyaretSayisi = await this.db.ref( "ziyaretSayisi" ).get();
-        return ziyaretSayisi.val();
-      } catch (error) {
-        //wait until it works
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          let ziyaretSayisi = await this.db.ref( "ziyaretSayisi" ).get();
+          return ziyaretSayisi.val();
+        } catch (error) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
       }
-     }
+      return 0;
     }
   
+    // Aynı anda açılan sayfalar birbirinin sayımını ezmesin diye sunucuda artırılır (oku-yaz yerine)
     ziyaretSayisiArtir = async () => {
-      await this.db.ref("ziyaretSayisi").set(Number(await this.ziyaretSayisiGetir()) + 1);
+      await this.db.ref("ziyaretSayisi").set(app.database.ServerValue.increment(1));
     }
 
     deleteHatim = async () => {
@@ -547,8 +661,9 @@ class FirebaseAPI{
         let filtered = aD.filter(x=>Object.keys(x)[0].toString() == this.extractKey().replace("/","").toString());
         console.log('test')
 
+        // Hatim silinmez, yalnızca "silindi" işaretlenir: sonradan "hatimlerimiz nerede" denirse veri yerinde durur
+        // (eskiden bu satırdan sonra hatmin bütün verisi adminToken ile eziliyordu)
         await this.db.ref(`hatim/${this.extractKey()}/delete`).set({adminToken: filtered[0][Object.keys(filtered[0])]});
-        await this.db.ref(`hatim/${this.extractKey()}`).set({adminToken: filtered[0][Object.keys(filtered[0])]});
 
         return 0;  
       } catch (error) {
@@ -575,6 +690,44 @@ class FirebaseAPI{
 
     hatimListener = (callback) => {
       return this.db.ref(`hatim/${this.extractKey()}`).on('value', callback);
+    }
+
+    // Hatmi canlı dinler; dönen fonksiyon dinlemeyi bırakır
+    listenHatim = (hatimKey, onData, onError) => {
+      const ref = this.db.ref(`hatim/${hatimKey}`);
+      const callback = snapshot => onData(snapshot.val());
+      ref.on('value', callback, onError);
+      return () => ref.off('value', callback);
+    }
+
+    // Okuma çizelgesi: hatim/<key>/<subKey>/charts/<parça>/<gün> = true (yıllık hatimle aynı yer)
+    fetchChartAt = async ({hatimKey, subKey, partNo}) => {
+      try {
+        const snapshot = await this.db.ref(`hatim/${hatimKey}/${subKey}/charts/${partNo}`).get();
+        const value = snapshot.val() || {};
+        return {data: Object.keys(value).filter(day => value[day] === true).map(Number), error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
+    }
+
+    markChartAt = async ({hatimKey, subKey, partNo, itemNo, value}) => {
+      try {
+        await this.db.ref(`hatim/${hatimKey}/${subKey}/charts/${partNo}/${itemNo}`).set(value);
+        return {data: 'Alhamdulillah', error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
+    }
+
+    // Cüz kartına tebrik: hatim/<key>/<subKey>/charts/reactions/<parça>/<emoji>/<cihaz> (geri almak: value=false)
+    setReaction = async ({hatimKey, subKey, partNo, reactionId, deviceId, value}) => {
+      try {
+        await this.db.ref(`hatim/${hatimKey}/${subKey}/charts/reactions/${partNo}/${reactionId}/${deviceId}`).set(value ? true : null);
+        return {data: 'Alhamdulillah', error: undefined};
+      } catch (error) {
+        return {data: undefined, error: error};
+      }
     }
 
     stopMakingNewKhatm = async () => {
@@ -657,9 +810,11 @@ class FirebaseAPI{
 
     getTitleAndDescription = async ({subKey}) => {
       try {
-        let titleResult = await this.db.ref(`hatim/${this.extractKey()}/${subKey}/baslik`).get();
-        let descriptionResult = await this.db.ref(`hatim/${this.extractKey()}/${subKey}/description`).get();
-        let dateResult = await this.db.ref(`hatim/${this.extractKey()}/${subKey}/bitisTarihi`).get();
+        let [titleResult, descriptionResult, dateResult] = await Promise.all([
+          this.db.ref(`hatim/${this.extractKey()}/${subKey}/baslik`).get(),
+          this.db.ref(`hatim/${this.extractKey()}/${subKey}/description`).get(),
+          this.db.ref(`hatim/${this.extractKey()}/${subKey}/bitisTarihi`).get(),
+        ]);
 
         return {
           title: titleResult.val(),

@@ -1,58 +1,58 @@
-
-
-
 import styled from 'styled-components';
-
-
+import { overlay, overlayCard } from 'theme';
 
 
 export const Container = styled.div`
+    ${overlay};
+    z-index: 1000;
     display: ${({alertVisible})=>alertVisible ? "flex" : "none"};
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    z-index: 10;
-    height: 100%;
-    width: 100%;
 `;
 
 
 export const AlertContainer = styled.div`
-    border: 1px solid #00ba47;
-    border-radius: 6px;
-    background-color: #00ba47;
-    margin-bottom: 100px;
-    width: 90%;
+    ${overlayCard};
 `;
 
 export const AlertLayout = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+    align-items: stretch;
+    padding: 20px 12px 8px;
+
+    & > div:last-child{
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 `;
 
 export const AlertText = styled.div`
-    font-size: 1.2rem;
-    padding: 30px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+    padding: 4px 8px 18px;
+`;
+
+const button = `
+    min-height: 52px;
+    padding: 0 16px;
+    border-radius: 14px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
 `;
 
 export const AlertButton = styled.button`
-    background-color: white;
-    color: black;
-    border: 1px solid white;
-    border-radius: 5px;
-    padding: 10px;
-    margin: 0 10px 0 10px;
+    ${button}
+    background: var(--emerald-700);
+    color: #fff;
+    border: 0;
 `;
 
 export const FeedbackButton = styled.button`
-    background-color: red;
-    color: white;
-    border: 1px solid red;
-    border-radius: 5px;
-    padding: 10px;
-    margin: 0 10px 0 10px;
+    ${button}
+    background: transparent;
+    color: var(--danger);
+    border: 1.5px solid var(--danger);
 `;
-

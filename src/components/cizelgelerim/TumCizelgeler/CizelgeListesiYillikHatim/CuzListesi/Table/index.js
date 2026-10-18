@@ -359,10 +359,10 @@ export default function UcAylarHerGun1CuzTable({ cizelgeRef, toggleCizelge, cize
             }} >
                 <img src={close}></img>
             </ActionIcon>
-            <Text style={{fontFamily: 'Righteous'}} size="xs">Kapat</Text>
+            <Text style={{fontFamily: 'inherit'}} size="xs">Kapat</Text>
         </div>
     </div>
-    <Title align="center" m="xl" style={{fontFamily: 'Righteous'}}>Recep Ayı Çizelgesi</Title>
+    <Title align="center" m="xl" style={{fontFamily: 'inherit'}}>Recep Ayı Çizelgesi</Title>
 
     <ScrollArea  type="always" scrollbarSize={20} className={classes.scrollArea} mx="20px">
       <Table  className={classes.table}  verticalSpacing="xs">
@@ -385,7 +385,7 @@ export default function UcAylarHerGun1CuzTable({ cizelgeRef, toggleCizelge, cize
       </Table>
     </ScrollArea>
 
-    <Title align="center" m="xl" style={{fontFamily: 'Righteous'}}>Şaban Ayı Çizelgesi</Title>
+    <Title align="center" m="xl" style={{fontFamily: 'inherit'}}>Şaban Ayı Çizelgesi</Title>
 
     <ScrollArea  type="always" scrollbarSize={20} className={classes.scrollArea} mx="20px">
       <Table  className={classes.table}  verticalSpacing="xs">
@@ -408,7 +408,7 @@ export default function UcAylarHerGun1CuzTable({ cizelgeRef, toggleCizelge, cize
       </Table>
     </ScrollArea>
 
-    <Title align="center" m="xl" style={{fontFamily: 'Righteous'}}>Ramazan Ayı Çizelgesi</Title>
+    <Title align="center" m="xl" style={{fontFamily: 'inherit'}}>Ramazan Ayı Çizelgesi</Title>
 
     <ScrollArea  type="always" scrollbarSize={20} className={classes.scrollArea} mx="20px">
       <Table  className={classes.table}  verticalSpacing="xs">

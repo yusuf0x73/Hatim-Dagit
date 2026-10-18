@@ -7,7 +7,7 @@ import Question from '../components/main/Question'
 import Footer from '../components/common/Footer';
 import Pwa from '../components/common/Pwa';
 import BottomNavigation from 'components/main/BottomNavigation';
-import MyInfos from '../components/main/MyInfos'
+import MyKhatms from 'components/myKhatms';
 import SorryMessage from 'components/common/SorryMessage';
 import { CookiesBanner } from 'components/common/CookieConsent';
 
@@ -68,7 +68,7 @@ export const Home = () => {
             <CookiesBanner />
             <Pwa  />
             { page == "hatims" && <Question />}
-            { page == "myInfos" && <MyInfos />}
+            { page == "myInfos" && <MyKhatms />}
             <BottomNavigation bottomNavigationVisible={bottomNavigationVisible} page={page} changePage={changePage} />
             <Footer/>
         </>

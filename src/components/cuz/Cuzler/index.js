@@ -16,20 +16,22 @@ YeniHatimWrapper, YeniHatimContainer, YeniHatimButton, YeniHatimIcon, YeniHatimT
 HideHatimIcon, ShowHatimIcon, HatimContainer, HatimIconContainer, HatimIconText, CuzlerDescription, CuzlerFinishDate,
 IsReadItem, IsReadText, ResponseItemContainer, RefreshKhatmsContainer, RefreshKhatmsIcon, RefreshKhatmsItem,
 DeleteHatimIcon, DeleteHatimIconContainer,
-HatimIconTemplate
+HatimIconTemplate, ResponseName, MineBadge, ActionBar, GridToolbar, GridHint, Legend, LegendItem, CardWrapper,
+SkeletonPage, SkeletonCard, SkeletonGrid, SkeletonTile, RetryButton
 } from './QuestionElements';
+import { Check } from 'tabler-icons-react';
+import { rememberPart, forgetPart, rememberTitle } from 'localStorage/myKhatms';
+import { ShareActions, PartSheet, fmt, hasSecret, failMessage, takeFailMessage, isLocalAdmin, ReactionChips, ReactionPicker, ReactSheet, ReadQuranBanner, TakenSheet, takenTitle } from 'components/khatmKit';
 import AskDialog from "../AskDialog";
 import LanguageData from '../../../strings';
 import {dataFormat} from '../../../backend/datas/dataFormat';
 import { removeAll, objectToArray, removeAll_v1, isKhatmFull, hatimSiraBelirle, setLanguage, isAdmin } from "../../../common";
 import { FaGithub } from "react-icons/fa";
 import backButton from '../../../icons/button.svg';
-import copy from '../../../icons/copy.svg';
-import share from '../../../icons/share.svg';
 import close from '../../../icons/close.svg';
 import {DatabaseContext} from '../../../backend';
 import ShareBox from '../ShareBox';
-import { extractKey, initializeLocalStorage } from "../../../common";
+import { extractKey, initializeLocalStorage, withTimeout } from "../../../common";
 import { Language } from '@styled-icons/ionicons-outline';
 import { RefreshCircle } from '@styled-icons/ionicons-outline';
 import AlertDialog from '../AlertDialog';
@@ -44,15 +46,14 @@ import EditModalContent from "../EditModalContent";
 import { cuzlerFunctionTriggerActions, useCuzlerFunctionTrigger } from '../../../features/cuzlerFunctionTrigger';
 import { yesNoDialogAlertActions } from '../../../features/yesNoDialogAlert';
 import {loggerActions, useLogger} from '../../../features/logger'
-import CuzModal from "../CuzModal";
 import LocDb from "@yusuf-yeniceri/easy-storage";
-import { cuzModalActions, useCuzModal } from '../../../features/cuzModal';
 import AlertDialogCommon from '../../common/AlertDialogCommon'
 import Logger from '../../../backend/APIs/firebase_api/logger';
 import { alertDialogActions } from '../../../features/alertDialog';
 import { loadingOverlayActions } from 'features/loadingOverlay';
 import { isReadDialogAlertActions } from 'features/isReadDialogAlert';
 import IsReadDialog from '../IsReadDialog/isReadDialog'
+import {juzRange} from 'plans/quran';
 
 
 
@@ -63,6 +64,7 @@ const Question = ({ toggle }) => {
     const [routes, setRoutes] = useState([]);
     const [hatimKey, setHatimKey] = useState("");
     const [hideDialogBox, setHideDialogBox] = useState(false);
+    const [justTaken, setJustTaken] = useState (null); // az önce alınan cüz: {title, text, read}
     const [linkKopyala, setLinkKopyala] = useState(LanguageData["/cuz"].After.Copy.Before)
     const [username, setUsername] = useState("");
     const [hatimNo, setHatimNo] = useState("");
@@ -73,6 +75,11 @@ const Question = ({ toggle }) => {
     const [waitText, setWaitText] = useState(LanguageData["/cuz"].Before.Wait);
     const [takePart, setTakePart] = useState(LanguageData["/cuz"].Button.Take);
     const [partIptal, setPartIptal] = useState(false);
+    // Cihazda kaydı olmayan ama secret'ı bulunan cüz: sunucu sahibini doğrularsa değiştirilebilir
+    const [partClaim, setPartClaim] = useState(false);
+    const [partAdmin, setPartAdmin] = useState(false);
+    // Başkasının cüzüne bırakılacak tebrik
+    const [reactTarget, setReactTarget] = useState(null);
     const [hideShareBox, setHideShareBox] = useState(false);
     const [hatimlerVisibilities, setHatimlerVisibilities] = useState([]);
     const [askDialogBox, setAskDialogBox] = useState(false);
@@ -86,12 +93,12 @@ const Question = ({ toggle }) => {
     const [khatmSubKeys, setKhatmSubKeys] = useState([])
     const [khatmsFetched, setKhatmsFetched] = useState([])
     const [isRefreshKhatmClickable, setIsRefreshKhatmClickable] = useState(true);
+    const [loadError, setLoadError] = useState(false);
 
     /** redux */
     const dispatch = useDispatch();
     const {barVisible, text, icon} = useNotification();
     const editCuzlerModal = useEditCuzlerModal();
-    const cuzModal = useCuzModal();
     /** redux end */
 
 
@@ -213,6 +220,9 @@ const Question = ({ toggle }) => {
     /** current index end */
 
 
+    const LOAD_TIMEOUT = 10000;
+    const LOAD_ATTEMPTS = 3;
+
     const initialRun = async () => {
         try {
 
@@ -223,14 +233,31 @@ const Question = ({ toggle }) => {
                 return;
             }
 
-            let result = await database.tasarrufluHatimGetir();
+            // Eskiden veri gelene kadar sonsuz döngüde bekliyordu; artık sınırlı deneme + zaman aşımı var
+            let result;
+            for (let attempt = 0; attempt < LOAD_ATTEMPTS; attempt++) {
+                if(!navigator.onLine) break;
+                try {
+                    result = await withTimeout(database.tasarrufluHatimGetir(), LOAD_TIMEOUT);
+                } catch (error) {
+                    // Zaman aşımı: Firebase isteği zaten beklemede, tekrar denemek sadece süreyi uzatır
+                    result = undefined;
+                    break;
+                }
 
-            if(result.versionError == true){
-                window.location.href = window.location.href.replace('cuz','cuzv2');
+                if(result != undefined && result.versionError == true){
+                    window.location.href = window.location.href.replace('cuz','cuzv2');
+                    return;
+                }
+
+                if(result != undefined && result.data != undefined) break;
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
-            while(result.data == undefined){
-                result = await database.tasarrufluHatimGetir();
+            if(result == undefined || result.data == undefined){
+                setLoadError(true);
+                setWaitText(LanguageData.CuzGrid.LoadError);
+                return;
             }
 
             result = result.data
@@ -241,9 +268,11 @@ const Question = ({ toggle }) => {
                 return;
             }
 
-            const {title, description, date} = await database.getTitleAndDescription({subKey: Object.values(result.khatmSubKeys)[0]});
+            const {title, description, date} = await withTimeout(
+                database.getTitleAndDescription({subKey: Object.values(result.khatmSubKeys)[0]}), LOAD_TIMEOUT);
 
             setCuzlerHatimCardTitle(title)
+            rememberTitle(extractKey(), title)
             setCuzlerHatimCardDescription(description)
             setCuzlerHatimCardDate(date)
 
@@ -304,16 +333,30 @@ const Question = ({ toggle }) => {
 
         } catch (error) {
             console.log(`Cuzler\\index.js: ${error}`);
-            setWaitText(LanguageData["/cuz"].Before.Error)
+            setLoadError(true);
+            setWaitText(LanguageData.CuzGrid.LoadError)
             return;
         }
     }
 
+    const retryInitialRun = async () => {
+        setLoadError(false);
+        setWaitText(LanguageData["/cuz"].Before.Wait);
+        await initialRun();
+    }
+
+    // İnternet geri geldiğinde kendiliğinden tekrar dene
+    useEffect(() => {
+        if(!loadError) return;
+        window.addEventListener('online', retryInitialRun);
+        return () => window.removeEventListener('online', retryInitialRun);
+    }, [loadError]);
+
     const addNewKhatm = async () => {
         try {
-            let result = await database.tasarrufluHatimGetir();
-            while(result.error != undefined){
-                result = await database.tasarrufluHatimGetir();
+            let result = await withTimeout(database.tasarrufluHatimGetir(), LOAD_TIMEOUT);
+            for (let attempt = 1; attempt < LOAD_ATTEMPTS && result.error != undefined; attempt++) {
+                result = await withTimeout(database.tasarrufluHatimGetir(), LOAD_TIMEOUT);
             }
 
             result = result.data
@@ -338,7 +381,7 @@ const Question = ({ toggle }) => {
                     return _newState;
                 })
             }else{
-                alert('Güncel veriler çekilemedi!')
+                showNotification({color: 'red', message: LanguageData.CuzGrid.LoadError})
             }
     }
 
@@ -360,15 +403,29 @@ const Question = ({ toggle }) => {
         
     }
 
+    // Bu tarayıcıdan alınan cüzleri "Sizin" diye işaretlemek için
+    const isMyPart = (subKey, cevap) => {
+        try {
+            const localStorageCuzObj = JSON.parse(localStorage.getItem("cuz")) || {};
+            return (localStorageCuzObj[subKey] || []).includes(cevap);
+        } catch (error) {
+            return false;
+        }
+    }
+
     const cuzlerFunctionTrigger = useCuzlerFunctionTrigger();
     let databaseListener = null;
 
-    useEffect(async () => {
+    // Alınan cüz sayısı: açılışta ve her cüz alma / bırakmadan sonra (eskiden her açıp kapamada tekrar çekiliyordu)
+    useEffect(() => {
+        database.getTotalReadParts().then(totalReadParts => {
+            if (totalReadParts.error == undefined){
+                setTotalPartsTaken(totalReadParts.data);
+            }
+        });
+    }, [allLanguage]);
 
-        let totalReadParts = await database.getTotalReadParts();
-        if (totalReadParts.error == undefined){
-            setTotalPartsTaken(totalReadParts.data);
-        }
+    useEffect(async () => {
 
         if(!initialRunDone){
             await initialRun();
@@ -379,6 +436,119 @@ const Question = ({ toggle }) => {
             dispatch(cuzlerFunctionTriggerActions.toggleVisibility())
         }
       }, [cuzlerFunctionTrigger.visible, hatimlerVisibilities, allLanguage, currentKhatmSubKey]);
+
+    // Cüz alma ya da (bu cihazdan alınmışsa) bırakma
+    const submitPart = async (name) => {
+                    dispatch (loadingOverlayActions.toggleVisibility ());
+                    setHideDialogBox(false);
+                    if(partIptal)
+                    {
+                        let cancelResult = await database.cuzIptalTasarruflu(hatimNo, activeHatimSubKey, activeHatimSubKeyFull);
+                        // İptal sunucuda başarısızsa cihazdaki kaydı silme
+                        if(cancelResult != undefined && cancelResult.code == -1){
+                            dispatch (loadingOverlayActions.toggleVisibility ());
+                            showNotification({color: 'red', message: failMessage(cancelResult.status, LanguageData.Kit.ReleaseFailed)});
+                            return;
+                        }
+
+                        if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
+                        let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
+                        localStorageCuzObj[activeHatimSubKey] = localStorageCuzObj[activeHatimSubKey] || [];
+                        localStorageCuzObj =  removeAll(localStorageCuzObj, hatimNo, activeHatimSubKey);
+                        localStorage.setItem("cuz", JSON.stringify( localStorageCuzObj ));
+                        forgetPart({key: extractKey(), subKey: activeHatimSubKey, no: hatimNo});
+
+                        
+                        // setTotalPartsTaken(database.countNumberOfCuzs(tempAllLanguages))
+                        setTakePart(LanguageData["/cuz"].Button.Take)
+                        setPartIptal(false);
+                        dispatch (loadingOverlayActions.toggleVisibility ());
+                    }else{
+                        let result = await database.cuzAl(name, hatimNo, activeHatimSubKey, true, makeNewHatimState, true);
+                        if(result.code == -1 && (result.status == 409 || result.status == 401)){
+                            dispatch (loadingOverlayActions.toggleVisibility ());
+                            showNotification({color: 'red', message: takeFailMessage(result.status)});
+                        }else if(result.code == -1){
+                            dispatch (loadingOverlayActions.toggleVisibility ());
+
+                            toggleAlertVisibility();
+                            dispatch(loggerActions.changeErrorKey(result.errorKey))
+                        }else{
+
+                            if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
+                            let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
+                            if(localStorageCuzObj[activeHatimSubKey] == null)
+                                localStorageCuzObj[activeHatimSubKey] = [];
+                            localStorageCuzObj[activeHatimSubKey].push(hatimNo);
+                            localStorage.setItem("cuz",JSON.stringify(localStorageCuzObj));
+                            rememberPart({key: extractKey(), type: 'cuz', route: `/cuz/${extractKey()}`, title: cuzlerHatimCardTitle,
+                                          subKey: activeHatimSubKey, no: hatimNo, label: `${hatimNo}. cüz`});
+                            dispatch (loadingOverlayActions.toggleVisibility ());
+                            setJustTaken({title: takenTitle(`${hatimNo}. cüz`), text: LanguageData.CuzGrid.ReadHint,
+                                      read: juzRange(Number(hatimNo))})
+                            // setTotalPartsTaken(database.countNumberOfCuzs(tempAllLanguages))
+                        }
+                    }
+
+
+
+
+                    let altHatimResult = await database.altHatimGetir({altHatimKey: activeHatimSubKey})
+                    if(altHatimResult.error == undefined){
+                        setAllLanguage(prevState => {
+                            let _newState = [...prevState];
+                            let index = allLanguage.findIndex(item => item.subKey == activeHatimSubKey);
+                            _newState[index] = altHatimResult.data;
+                            console.log(_newState)
+                            return _newState;
+                        })
+                        const {sira, subSira} = hatimSiraBelirle(hatimNo)
+                        if (!partIptal && (altHatimResult.data[sira]['cevaplar'][subSira]['isim'] != name)){
+                            toggleAlertVisibility();
+                            // dispatch(loggerActions.changeErrorKey(result.errorKey))
+                        }else if(partIptal && (altHatimResult.data[sira]['cevaplar'][subSira]['isim'] != '')){
+                            showNotification({color: 'red', message: LanguageData.Kit.ReleaseFailed})
+                        }
+                    }else{
+                        showNotification({color: 'red', message: LanguageData.CuzGrid.LoadError})
+                    }
+    }
+
+    const chartsOfSub = subKey => (allLanguage.find(item => item.subKey == subKey) || {}).charts;
+
+    // Tebrikten sonra kartlardaki emojiler güncellensin
+    const refreshSub = async subKey => {
+        const result = await database.altHatimGetir({altHatimKey: subKey});
+        if(result.error == undefined){
+            setAllLanguage(prevState => prevState.map(item => item.subKey == subKey ? result.data : item));
+        }
+    }
+
+    // Cüzün sahibi ismini değiştirir; sunucu cihazdaki secret ile sahibini doğrular
+    const renamePart = async (name) => {
+        dispatch (loadingOverlayActions.toggleVisibility ());
+        setHideDialogBox(false);
+        const result = await database.cuzIsimDegistir(name, hatimNo, activeHatimSubKey);
+        dispatch (loadingOverlayActions.toggleVisibility ());
+        if(result == undefined || result.code == -1){
+            showNotification({color: 'red', message: failMessage(result && result.status, LanguageData.Kit.ChartSaveFailed)});
+            return;
+        }
+        if(partClaim && !partAdmin){
+            if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
+            let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
+            localStorageCuzObj[activeHatimSubKey] = [...(localStorageCuzObj[activeHatimSubKey] || []), hatimNo];
+            localStorage.setItem("cuz", JSON.stringify(localStorageCuzObj));
+            rememberPart({key: extractKey(), type: 'cuz', route: `/cuz/${extractKey()}`, title: cuzlerHatimCardTitle,
+                          subKey: activeHatimSubKey, no: hatimNo, label: `${hatimNo}. cüz`});
+        }
+        setPartIptal(false);
+        setPartClaim(false);
+        let altHatimResult = await database.altHatimGetir({altHatimKey: activeHatimSubKey})
+        if(altHatimResult.error == undefined){
+            setAllLanguage(prevState => prevState.map(item => item.subKey == activeHatimSubKey ? altHatimResult.data : item));
+        }
+    }
 
     return (
         <>
@@ -415,136 +585,42 @@ const Question = ({ toggle }) => {
         <IsReadDialog />
         
 
-        <LoadingContainer visibility={loadingVisibility}>
-            <LoadingItem >{waitText}</LoadingItem>
-        </LoadingContainer>
+        {/** Yüklenirken sayfanın iskeleti görünür, üstünde yarı saydam bir bilgi kutusu durur */}
+        {loadingVisibility && <>
+            <SkeletonPage aria-hidden="true">
+                <SkeletonCard />
+                <SkeletonGrid>
+                    {Array.from({length: 30}, (_, i) => <SkeletonTile key={i} />)}
+                </SkeletonGrid>
+            </SkeletonPage>
+            <LoadingContainer visibility={true} spinner={waitText === LanguageData["/cuz"].Before.Wait}>
+                <LoadingItem>{waitText}</LoadingItem>
+                {loadError && <RetryButton onClick={retryInitialRun}>
+                    <RefreshCircle height="20px" width="20px" />
+                    {LanguageData.CuzGrid.Retry}
+                </RetryButton>}
+            </LoadingContainer>
+        </>}
 
 
-        <ShareContainer onClick={()=>{
-                    changeShareBoxVisibility();
-                }}>
-            <ShareIcon src={share} iconSize={"30px"} ></ShareIcon>
-            <ShareItem>{LanguageData['/cuz'].After.Share}</ShareItem>
-        </ShareContainer>
+        {!loadingVisibility && <ReadQuranBanner />}
+        <TakenSheet taken={justTaken} onClose={() => setJustTaken(null)} />
 
-        <CopyContainer onClick={()=>{
-                   let newLocation = window.location.href.replace("localhost:3000","hatimdagit.com")
-                   newLocation = newLocation.replace("hatim-dagit.web.app","hatimdagit.com")
-                   var text = newLocation;
-                   navigator.clipboard.writeText(text).then(function() {
-                        setLinkCopiedText(LanguageData["/cuz"].After.Copy.After)
-                   }, function(err) {});
-                }}>
-            <CopyIcon src={copy} iconSize={"30px"} ></CopyIcon>
-            <CopyItem>{linkCopiedText}</CopyItem>
-        </CopyContainer>
+        {!loadingVisibility && <ShareActions title={cuzlerHatimCardTitle} />}
 
 
-        {/** Tek Cüz editleme*/}
-        <Modal
-            styles={{
-                root: {height: '100%'},
-                inner: {height: '100%'},
-                body: {height: '100%'},
+        {/** Cüz alma / bırakma */}
+        <PartSheet visible={hideDialogBox} onClose={() => setHideDialogBox(false)}
+                   mode={partIptal ? (partAdmin ? 'admin' : partClaim ? 'other' : 'mine') : 'take'} badge={hatimNo} label={`${hatimNo}. cüz`} holder={username}
+                   read={Number(hatimNo) >= 1 && Number(hatimNo) <= 30 ? juzRange(Number(hatimNo)) : undefined}
+                   onTake={submitPart} onRename={partIptal ? renamePart : undefined} onRelease={() => submitPart(username)}
+                   extra={partIptal && <ReactionPicker hatimKey={extractKey().replace("/", "")} subKey={activeHatimSubKey} no={hatimNo}
+                                                       charts={chartsOfSub(activeHatimSubKey)} />} />
 
-            }}
-            opened={cuzModal.visible}
-            onClose={() => dispatch(cuzModalActions.toggleVisibility())}
-            title={LanguageData["/cuz"].CuzlerHatimCard.PartModal.Title}
-            >
-                <CuzModal />
-        </Modal>
+        <ReactSheet target={reactTarget} hatimKey={extractKey().replace("/", "")}
+                    charts={reactTarget ? chartsOfSub(reactTarget.subKey) : undefined}
+                    onClose={() => { refreshSub(reactTarget.subKey); setReactTarget(null); }} />
 
-        {/** tek Cüz alma eski yöntem*/}
-        <DialogBox visibility={hideDialogBox}>
-
-                <DialogIcon id={"closeTakePart"} src={close} iconSize={"20px"} alignEnd={true} onClick={
-                        ()=>{
-                            setHideDialogBox(!hideDialogBox);
-                        }
-                    } />
-
-                <DialogText fontSize={"20px"}>
-                    {hatimNo}. {LanguageData["/cuz"].Button.Question}
-                </DialogText>
-
-
-                <DialogInputBox value={username} onChange = {(event)=>{
-                    setUsername(event.target.value);
-                }}>
-                </DialogInputBox>
-
-                <NavBtnLink id={"takeButton"} onClick={async ()=>{
-                    dispatch (loadingOverlayActions.toggleVisibility ());
-                    setHideDialogBox(!hideDialogBox);
-                    if(partIptal)
-                    {
-                        await database.cuzIptalTasarruflu(hatimNo, activeHatimSubKey, activeHatimSubKeyFull);
-
-                        if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                        let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                        localStorageCuzObj[activeHatimSubKey] = localStorageCuzObj[activeHatimSubKey] || [];
-                        localStorageCuzObj =  removeAll(localStorageCuzObj, hatimNo, activeHatimSubKey);
-                        localStorage.setItem("cuz", JSON.stringify( localStorageCuzObj ));
-
-                        
-                        // setTotalPartsTaken(database.countNumberOfCuzs(tempAllLanguages))
-                        setTakePart(LanguageData["/cuz"].Button.Take)
-                        setPartIptal(false);
-                        dispatch (loadingOverlayActions.toggleVisibility ());
-                    }else{
-                        let result = await database.cuzAl(username, hatimNo, activeHatimSubKey, true, makeNewHatimState, true);
-                        if(result.code == -1){
-                            dispatch (loadingOverlayActions.toggleVisibility ());
-
-                            toggleAlertVisibility();
-                            dispatch(loggerActions.changeErrorKey(result.errorKey))
-                        }else{
-
-                            if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                            let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                            if(localStorageCuzObj[activeHatimSubKey] == null)
-                                localStorageCuzObj[activeHatimSubKey] = [];
-                            localStorageCuzObj[activeHatimSubKey].push(hatimNo);
-                            localStorage.setItem("cuz",JSON.stringify(localStorageCuzObj));
-                            dispatch (loadingOverlayActions.toggleVisibility ());
-                            alert('Cüz okumayı bitirdikten sonra, "Okunuyor" yazısına tıklayarak "Okundu" yapabilirsiniz')
-                            // setTotalPartsTaken(database.countNumberOfCuzs(tempAllLanguages))
-                        }
-                    }
-
-
-
-
-                    let altHatimResult = await database.altHatimGetir({altHatimKey: activeHatimSubKey})
-                    if(altHatimResult.error == undefined){
-                        setAllLanguage(prevState => {
-                            let _newState = [...prevState];
-                            let index = allLanguage.findIndex(item => item.subKey == activeHatimSubKey);
-                            _newState[index] = altHatimResult.data;
-                            console.log(_newState)
-                            return _newState;
-                        })
-                        const {sira, subSira} = hatimSiraBelirle(hatimNo)
-                        if (!partIptal && (altHatimResult.data[sira]['cevaplar'][subSira]['isim'] != username)){
-                            toggleAlertVisibility();
-                            // dispatch(loggerActions.changeErrorKey(result.errorKey))
-                        }else if(partIptal && (altHatimResult.data[sira]['cevaplar'][subSira]['isim'] != '')){
-                            alert('Cüz iptal edilemedi!')
-                        }
-                    }else{
-                        alert('Güncel veriler çekilemedi!')
-                    }
-                }}>
-                    {takePart}
-                </NavBtnLink>
-
-
-
-        </DialogBox>
-
-        {/** Mobil Hatim paylaş*/}
-        <ShareBox hatimHeader={allLanguage[0].baslik} shareBoxVisibility={hideShareBox} changeShareBoxVisibility={changeShareBoxVisibility} />
 
 
         {/* Hatimler ikonu ve yazısı */}
@@ -556,7 +632,7 @@ const Question = ({ toggle }) => {
 
         return <>
 
-{ (index==0) && <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+{ (index==0) && <CardWrapper>
             {
             <CuzlerHatimCard header={cuzlerHatimCardTitle} description={cuzlerHatimCardDescription}
                             progress={totalPartsTaken/(allLanguage.length*30)*100} leftCuzs={allLanguage.length*30-totalPartsTaken}
@@ -564,15 +640,24 @@ const Question = ({ toggle }) => {
                             yesHandler={yesHandlerState} toggleYesHandler={toggleYesHandlerState}
                             noHandler={noHandlerState} toggleNoHandler={toggleNoHandlerState}
                             setYesHandlerStateParameters={setYesHandlerStateParameters}
+                            myParts={allLanguage.flatMap((khatm, khatmIndex) =>
+                                [...khatm[1].cevaplar, ...khatm[2].cevaplar, ...khatm[3].cevaplar]
+                                    .filter(({cevap, alindi}) => alindi && isMyPart(khatm.subKey, cevap))
+                                    .map(({cevap}) => allLanguage.length > 1 ? `${khatmIndex + 1}. hatim · ${cevap}. cüz` : `${cevap}. cüz`))}
 
             ></CuzlerHatimCard>
-            
+
             }
-        </div>}
-        {(index==0) && <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'right', marginRight: '30px'}}>
+        </CardWrapper>}
+        {(index==0) && <GridToolbar>
+            <Legend>
+                <LegendItem kind="free">{LanguageData.CuzGrid.Available}</LegendItem>
+                <LegendItem kind="taken">{LanguageData.CuzGrid.Taken}</LegendItem>
+                <LegendItem kind="read">{LanguageData.CuzGrid.Read}</LegendItem>
+            </Legend>
             <RefreshKhatmsContainer onClick={async ()=>{
                     if(isRefreshKhatmClickable == false){
-                        alert('20 saniyede bir yenileme yapabilirsiniz!')
+                        showNotification({message: LanguageData.CuzGrid.RefreshWait})
                         return;
                     }
 
@@ -590,14 +675,11 @@ const Question = ({ toggle }) => {
                         setIsRefreshKhatmClickable(true)
                     }, 20000);
                     }}>
-                    <RefreshCircle
-                            color={'green'} 
-                            height="30px"
-                            width="30px"
-                            />
-                    <RefreshKhatmsItem>{"Yenile"}</RefreshKhatmsItem>
-                </RefreshKhatmsContainer>
-        </div>}
+                <RefreshCircle height="20px" width="20px" />
+                <RefreshKhatmsItem>{LanguageData.CuzGrid.Refresh}</RefreshKhatmsItem>
+            </RefreshKhatmsContainer>
+        </GridToolbar>}
+        {(index==0) && <GridHint>{LanguageData.CuzGrid.Hint}</GridHint>}
 
 
         {  (hatimlerVisibilities.length > 1) && <QuestionItem fontSize={"1.6rem"}>
@@ -672,227 +754,59 @@ const Question = ({ toggle }) => {
             {/* Hatmin kendisi */}
 
         <HatimContainer className="hatimContainer"  visibility={hatimlerVisibilities[index]} >
-        
 
         <RespondContainer visibility={hideRespond}>
             <RespondOuterContainer>
             <RespondInnerContainer>
                 {
-                    Language[1].cevaplar.map(({cevap, alindi, isim, isRead}) => (
-                        <ResponseItemContainer>
-                            <ResponseItem bgColor={alindi} onClick={()=>{
+                    [...Language[1].cevaplar, ...Language[2].cevaplar, ...Language[3].cevaplar].map(({cevap, alindi, isim, isRead}) => {
+                        const mine = isMyPart(Language.subKey, cevap);
+                        return (
+                        <ResponseItemContainer key={cevap} taken={alindi} read={isRead} mine={mine}>
+                            <ResponseItem bgColor={alindi} data-sub={Language.subKey} data-part={cevap} onClick={()=>{
 
                                 if (alindi) {
                                     setActiveHatimSubKey(Language.subKey);
                                     setActiveHatimSubKeyFull(isKhatmFull(Language));
-                                    if(!Array.isArray(LocDb.ref("Hatim/adminToken").get()))
-                                        LocDb.ref("Hatim/adminToken").set([])
-                                    let filtered = LocDb.ref("Hatim/adminToken").get().filter(x=>Object.keys(x)[0].toString() == extractKey().replace("/","").toString());
-                                    if(filtered.length == 0){
-                                        if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                                        let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                                        if(localStorageCuzObj[Language.subKey] == null)
-                                            localStorageCuzObj[Language.subKey] = [];
-                                        if(!localStorageCuzObj[Language.subKey].includes(cevap)){
-                                            return;
-                                        }
-
-
-                                        setTakePart(LanguageData["/cuz"].Button.TakeCancel)
-                                        setPartIptal(true);
-                                        //unnecessary, please fix it
-                                        setHatimNo(cevap);
-                                        setUsername(isim);
-                                        setHideDialogBox(true);
-                                        return;
-                                    }else{
-                                        dispatch(cuzModalActions.changeSubKey(Language.subKey))
-                                        dispatch(cuzModalActions.changeName(isim))
-                                        dispatch(cuzModalActions.changeCuzNo(cevap))
-                                        dispatch(cuzModalActions.toggleVisibility())
-                                        dispatch(cuzModalActions.changePartsFull(isKhatmFull(Language)))
-                                        return;
-                                    }
-
-
-                                }
-
-                                setTakePart(LanguageData["/cuz"].Button.Take);
-                                setHatimNo(cevap);
-                                setActiveHatimSubKey(Language.subKey);
-                                setHideDialogBox(true);
-                                setUsername('');
-                            }}>
-                                <ResponseLogo />
-                                <ResponseText bgColor={alindi}>
-                                    {cevap}
-                                </ResponseText>
-                                <ResponseText color={"#FFBF17"} bgColor={alindi}>
-                                    {isim}
-                                </ResponseText>
-                            </ResponseItem>
-
-                            {alindi && <IsReadItem bgColor={isRead} onClick={()=>{
-                                    if(isRead){
-                                        return;
-                                    }
-                                    setActiveHatimSubKey(Language.subKey);
-                                    dispatch(isReadDialogAlertActions.changeIsRead(isRead))
-                                    // if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                                    // let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                                    // if(localStorageCuzObj[Language.subKey] == null)
-                                    //     localStorageCuzObj[Language.subKey] = [];
-                                    // if(!localStorageCuzObj[Language.subKey].includes(cevap)){
-                                    //     return;
-                                    // }
-                                    
-                                    dispatch(isReadDialogAlertActions.changePartNo(cevap))
-                                    dispatch(isReadDialogAlertActions.changeSubKey(Language.subKey))
-
-                                    dispatch(isReadDialogAlertActions.toggleVisibility())
-                            }}>
-                                <IsReadText>{isRead ? LanguageData.IsReadDialog.Read : LanguageData.IsReadDialog.NotRead}</IsReadText>
-                            </IsReadItem>}
-                        </ResponseItemContainer>
-                    ))
-                }
-                {
-                    Language[2].cevaplar.map(({cevap, alindi, isim, isRead}) => (
-                    <ResponseItemContainer>
-                        <ResponseItem bgColor={alindi} onClick={()=>{
-                            if (alindi) {
-                                setActiveHatimSubKey(Language.subKey);
-                                setActiveHatimSubKeyFull(isKhatmFull(Language));
-                                if(!Array.isArray(LocDb.ref("Hatim/adminToken").get()))
-                                    LocDb.ref("Hatim/adminToken").set([])
-                                let filtered = LocDb.ref("Hatim/adminToken").get().filter(x=>Object.keys(x)[0].toString() == extractKey().replace("/","").toString());
-                                if(filtered.length == 0){
-
                                     if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
                                     let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                                    if(localStorageCuzObj[Language.subKey] == null)
-                                        localStorageCuzObj[Language.subKey] = [];
-                                    if(!localStorageCuzObj[Language.subKey].includes(cevap)){
+                                    const claim = !(localStorageCuzObj[Language.subKey] || []).includes(cevap);
+                                    const admin = claim && isLocalAdmin(extractKey().replace("/", ""));
+                                    // Cihazda kaydı yoksa: hatmi oluşturan herkesinkini, secret'ı olan kendisininkini değiştirebilir
+                                    if(claim && !admin && !hasSecret({hatimKey: extractKey().replace("/", ""), subKey: Language.subKey, legacy: true})){
+                                        // Başkasının cüzü: kimin aldığı ve tebrik
+                                        setReactTarget({subKey: Language.subKey, no: cevap, badge: cevap, label: `${cevap}. cüz`, holder: isim});
                                         return;
                                     }
-
+                                    setPartAdmin(admin);
 
                                     setTakePart(LanguageData["/cuz"].Button.TakeCancel)
                                     setPartIptal(true);
-                                    //unnecessary, please fix it
+                                    setPartClaim(claim);
                                     setHatimNo(cevap);
                                     setUsername(isim);
                                     setHideDialogBox(true);
                                     return;
-                                }else{
-                                    dispatch(cuzModalActions.changeSubKey(Language.subKey))
-                                    dispatch(cuzModalActions.changeName(isim))
-                                    dispatch(cuzModalActions.changeCuzNo(cevap))
-                                    dispatch(cuzModalActions.toggleVisibility())
-                                    dispatch(cuzModalActions.changePartsFull(isKhatmFull(Language)))
-                                    return;
-                                }
-
-
-                            }
-
-                            setTakePart(LanguageData["/cuz"].Button.Take);
-                            setHatimNo(cevap);
-                            setActiveHatimSubKey(Language.subKey);
-                            setHideDialogBox(true);
-                            setUsername('');
-                        }}>
-                            <ResponseLogo />
-                            <ResponseText bgColor={alindi}>
-                                {cevap}
-                            </ResponseText>
-                            <ResponseText color={"#FFBF17"} bgColor={alindi}>
-                                {isim}
-                            </ResponseText>
-                        </ResponseItem>
-
-                        
-                        {alindi && <IsReadItem bgColor={isRead} onClick={()=>{
-                            if(isRead){
-                                return;
-                            }
-                            setActiveHatimSubKey(Language.subKey);
-                            dispatch(isReadDialogAlertActions.changeIsRead(isRead))
-                            // if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                            // let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                            // if(localStorageCuzObj[Language.subKey] == null)
-                            //     localStorageCuzObj[Language.subKey] = [];
-                            // if(!localStorageCuzObj[Language.subKey].includes(cevap)){
-                            //     return;
-                            // }
-                            
-                            dispatch(isReadDialogAlertActions.changePartNo(cevap))
-                            dispatch(isReadDialogAlertActions.changeSubKey(Language.subKey))
-
-                            dispatch(isReadDialogAlertActions.toggleVisibility())
-                        }}>
-                        <IsReadText>{isRead ? LanguageData.IsReadDialog.Read : LanguageData.IsReadDialog.NotRead}</IsReadText>
-                        </IsReadItem>}
-                    </ResponseItemContainer>
-                    ))
-                }
-                {
-                    Language[3].cevaplar.map(({cevap, alindi, isim, isRead}) => (
-
-                        <ResponseItemContainer>
-                            <ResponseItem bgColor={alindi} onClick={()=>{
-
-                                if (alindi) {
-                                    setActiveHatimSubKey(Language.subKey);
-                                    setActiveHatimSubKeyFull(isKhatmFull(Language));
-                                    if(!Array.isArray(LocDb.ref("Hatim/adminToken").get()))
-                                        LocDb.ref("Hatim/adminToken").set([])
-                                    let filtered = LocDb.ref("Hatim/adminToken").get().filter(x=>Object.keys(x)[0].toString() == extractKey().replace("/","").toString());
-                                    if(filtered.length == 0){
-
-                                        if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                                        let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                                        if(localStorageCuzObj[Language.subKey] == null)
-                                            localStorageCuzObj[Language.subKey] = [];
-                                        if(!localStorageCuzObj[Language.subKey].includes(cevap)){
-                                            return;
-                                        }
-
-
-                                        setTakePart(LanguageData["/cuz"].Button.TakeCancel)
-                                        setPartIptal(true);
-                                        //unnecessary, please fix it
-                                        setHatimNo(cevap);
-                                        setUsername(isim);
-                                        setHideDialogBox(true);
-                                        return;
-                                    }else{
-                                        dispatch(cuzModalActions.changeSubKey(Language.subKey))
-                                        dispatch(cuzModalActions.changeName(isim))
-                                        dispatch(cuzModalActions.changeCuzNo(cevap))
-                                        dispatch(cuzModalActions.toggleVisibility())
-                                        dispatch(cuzModalActions.changePartsFull(isKhatmFull(Language)))
-                                        return;
-                                    }
-
-
                                 }
 
                                 setTakePart(LanguageData["/cuz"].Button.Take);
+                                setPartIptal(false);
+                                setPartClaim(false);
+                                setPartAdmin(false);
                                 setHatimNo(cevap);
                                 setActiveHatimSubKey(Language.subKey);
                                 setHideDialogBox(true);
                                 setUsername('');
                             }}>
-                                <ResponseLogo />
-                                <ResponseText bgColor={alindi}>
+                                {mine && <MineBadge>{LanguageData.CuzGrid.Mine}</MineBadge>}
+                                <ResponseText>
                                     {cevap}
                                 </ResponseText>
-                                <ResponseText color={"#FFBF17"} bgColor={alindi}>
-                                    {isim}
-                                </ResponseText>
+                                <ResponseName taken={alindi}>
+                                    {alindi ? isim : LanguageData.CuzGrid.Available}
+                                </ResponseName>
+                                {alindi && <ReactionChips charts={Language.charts} no={cevap} />}
                             </ResponseItem>
-
 
                             {alindi && <IsReadItem bgColor={isRead} onClick={()=>{
                                     if(isRead){
@@ -900,31 +814,20 @@ const Question = ({ toggle }) => {
                                     }
                                     setActiveHatimSubKey(Language.subKey);
                                     dispatch(isReadDialogAlertActions.changeIsRead(isRead))
-                                    // if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
-                                    // let localStorageCuzObj = JSON.parse(localStorage.getItem("cuz"));
-                                    // if(localStorageCuzObj[Language.subKey] == null)
-                                    //     localStorageCuzObj[Language.subKey] = [];
-                                    // if(!localStorageCuzObj[Language.subKey].includes(cevap)){
-                                    //     return;
-                                    // }
-                                    
                                     dispatch(isReadDialogAlertActions.changePartNo(cevap))
                                     dispatch(isReadDialogAlertActions.changeSubKey(Language.subKey))
 
                                     dispatch(isReadDialogAlertActions.toggleVisibility())
                             }}>
+                                {isRead && <Check size={14} strokeWidth={3} />}
                                 <IsReadText>{isRead ? LanguageData.IsReadDialog.Read : LanguageData.IsReadDialog.NotRead}</IsReadText>
                             </IsReadItem>}
-
                         </ResponseItemContainer>
-                    ))
+                    )})
                 }
             </RespondInnerContainer>
 
-
-
             </RespondOuterContainer>
-
 
         </RespondContainer>
 
@@ -938,7 +841,6 @@ const Question = ({ toggle }) => {
         { (! makeNewHatim) && (JSON.parse(localStorage.getItem("CuzKeyler")) ? JSON.parse(localStorage.getItem("CuzKeyler")) : [] ).includes(extractKey()) && !loadingVisibility && <YeniHatimWrapper>
             <YeniHatimContainer>
                 <YeniHatimButton id="NewSubKhatm" onClick={()=>{
-                    window.alert("Eğer yeni Hatim eklemenize rağmen sayfaya eklenmemişse, lütfen önce sayfayı yenilemeyi deneyin.")
                     toggleYesHandlerState(yesHandler);
                     setYesHandlerStateParameters(null);
                     dispatch(yesNoDialogAlertActions.changeText(LanguageData["/cuz"].AddKhatmAlert.Question))
@@ -957,7 +859,7 @@ const Question = ({ toggle }) => {
                 if(response == 200){
                     setMakeNewHatim(false);
                 }else{
-                    alert('Lütfen tekrar deneyin!')
+                    showNotification({color: 'red', message: LanguageData.Kit.ChartSaveFailed})
                 }
             }}>{LanguageData.AutomaticKhatm}</Button>
         </Center>}

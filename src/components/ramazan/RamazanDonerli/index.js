@@ -29,6 +29,7 @@ import ShareBox from '../ShareBox';
 import { extractKey, initializeLocalStorage } from "../../../common";
 import { Language } from '@styled-icons/ionicons-outline';
 import {Button, Center} from '@mantine/core'
+import { rememberPart, forgetPart } from 'localStorage/myKhatms';
 
 
 // let counter = 0;+0
@@ -288,7 +289,14 @@ const Constr = ({ toggle, firebase, toggleCizelge, cizelgeId, toggleCizelgeId })
                     setHideDialogBox(!hideDialogBox);
                     if(partIptal)
                     {
-                        await firebase.cuzIptal(hatimNo, activeHatimSubKey);
+                        let cancelResult = await firebase.cuzIptal(hatimNo, activeHatimSubKey);
+                        // İptal sunucuda başarısızsa cihazdaki kaydı silme
+                        if(cancelResult.code == -1){
+                            alert('Cüz iptal edilemedi! Lütfen internet bağlantınızı kontrol edip tekrar deneyin.');
+                            setAllLanguage(objectToArray(await firebase.hatimGetir()));
+                            return;
+                        }
+                        forgetPart({key: extractKey(), subKey: activeHatimSubKey, no: hatimNo});
                         
                         switch (currentApi) {
                             case 2:
@@ -312,9 +320,14 @@ const Constr = ({ toggle, firebase, toggleCizelge, cizelgeId, toggleCizelgeId })
                         return;
                     }
                     let result = await firebase.cuzAl(username, hatimNo, activeHatimSubKey, true, makeNewHatimState);
+                    // Alınamadıysa cihaza "alındı" diye kaydetme; güncel durumu göster
                     if(result.code == -1){
-                        // perform action
+                        alert(LanguageData["/cuz"].AlertDialog.Title);
+                        setAllLanguage(objectToArray(await firebase.hatimGetir()));
+                        return;
                     }
+                    rememberPart({key: extractKey(), type: 'ramazan', route: `/ramazan/${extractKey()}`, title: allLanguage[0].baslik,
+                                  subKey: activeHatimSubKey, no: hatimNo, label: `${hatimNo}. cüz`});
                     
                     switch (currentApi) {
                         case 2:

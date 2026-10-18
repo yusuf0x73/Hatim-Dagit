@@ -1,211 +1,141 @@
-
-
-
-
-
+//                                     BİSMİLLAHİRRAHMANİRRAHİM
 
 import Language from '../../../../strings/index';
 import {DialogBox, DialogContainer, DialogIcon, DialogText, DialogTextSpan, DialogInputBox,
-        DialogTextArea, DialogLink} from '../../Question/QuestionElements'
-import { NavBtnLink } from '../../../common/Navbar/NavbarElements';
+        DialogTextArea, FieldRow} from '../../Question/QuestionElements'
 import close from '../../../../icons/close.svg';
 import { Checkbox } from "@mantine/core";
-import { useState, useEffect, useContext } from "react";
-import Counter from '../../Counter';
+import { useState, useContext } from "react";
 import { useForm } from '@mantine/form';
-import copy from '../../../../icons/copy.svg';
 import {DataServiceContext} from '../../../../backend'
+import {PrimaryButton} from 'theme';
+import LinkReadySheet from '../../LinkReadySheet';
 
+const todayString = () => {
+    const currentDate = new Date();
+    return currentDate.getFullYear() + "-" + String(currentDate.getMonth()+1).padStart(2,'0') + "-" + String(currentDate.getDate()).padStart(2,'0');
+}
 
-const AskDialog = ({ firebase, visible, setVisible }) => {
+// input type=number değeri string döner; veritabanına sayı olarak ve en az 1 kaydedilmeli
+const toPositiveInt = (value, fallback) => {
+    const number = parseInt(value, 10);
+    return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+const YearlyKhatmDialog = ({ visible, setVisible }) => {
 
         const dataService = useContext( DataServiceContext );
+        const labels = Language["/"].Button.Header;
 
-        const [makeNewHatim, setMakeNewHatim] = useState(false);
-        const [pageName, setPageName] = useState("enterInfo");
-        const [linkKopyala, setLinkKopyala] = useState(Language["/"].Button.Final.Before.Copy) 
+        // "form" -> bilgi girişi, "link" -> oluşturuldu penceresi
+        const [step, setStep] = useState("form");
+        const [link, setLink] = useState(null);
+        const [error, setError] = useState(false);
 
-
-        const currentDate = new Date();
         const form = useForm({
             initialValues: {
               header: '',
               description: '',
-              startingDate: currentDate.getFullYear() + "-" + String(currentDate.getMonth()+1).padStart(2,'0') + "-" + String(currentDate.getDate()).padStart(2,'0'),
+              startingDate: todayString(),
               howManyDays: 7,
               totalKhatmsBeDistributed: 30,
               donerli: false,
               makeNewHatim: false,
-              linkGenerated:{
-                hatimKey: '',
-                baslik: Language["/"].Button.Final.Before.Header,
-                link: Language["/"].Button.Final.Before.LinkReady,
-                cevap: Language["/"].Button.Final.Before.Button,
-              }
             }
           });
 
-        let EnterInfo = <>
-        
-        <DialogBox visibility={visible} height={"640px"} top={"5%"}>
+        const closeAll = () => {
+            setVisible(false);
+            setStep("form");
+            setLink(null);
+            setError(false);
+        }
 
-                <DialogContainer>
+        const createKhatm = async () => {
+            setStep("link");
+            setLink(null);
+            setError(false);
 
-                <DialogIcon src={close} iconSize={"30px"} alignEnd={true} onClick={
-                ()=>{
-                setVisible(false);
-                }
-                } />
-
-                <DialogText fontSize={"20px"}>
-                {Language["/"].Button.Header.Text}
-                </DialogText>
-
-                <div style={{height:'30px'}}></div>
-
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <DialogTextSpan>{Language["/"].Button.Header.InputSpan[0]}</DialogTextSpan>
-                    <DialogInputBox placeholder={Language["/"].Button.Header.Input[0]} onChange = {(event)=>{
-                        form.setFieldValue('header', event.target.value)
-                    }}/>
-                </div>
-
-                <div style={{height:'10px'}}></div>
-
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <DialogTextSpan>{Language["/"].Button.Header.InputSpan[1]}</DialogTextSpan>
-                    <DialogTextArea rows="2" type="" placeholder={Language["/"].Button.Header.Input[1]} onChange = {(event)=>{
-                        form.setFieldValue('description', event.target.value)
-                        
-                    }}/>
-                </div>
-
-                <div style={{height:'10px'}}></div>
-
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <DialogTextSpan>{Language["/"].Button.Header.InputSpan[5]}</DialogTextSpan>
-                    <DialogInputBox type="date" placeholder={form.values.startingDate}  onChange = {(event)=>{
-                        form.setFieldValue('startingDate', event.target.value)
-                    }}/>
-                </div>
-
-                {<div style={{height:'10px'}}></div>}
-
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <DialogTextSpan>{Language["/"].Button.Header.InputSpan[6]}</DialogTextSpan>
-                    <DialogInputBox type="number" placeholder={form.values.howManyDays}  onChange = {(event)=>{
-                        form.setFieldValue('howManyDays', event.target.value)
-                    }}/>
-                </div>
-
-                {<div style={{height:'10px'}}></div>}
-
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <DialogTextSpan>{Language["/"].Button.Header.InputSpan[7]}</DialogTextSpan>
-                    <DialogInputBox type="number" placeholder={form.values.totalKhatmsBeDistributed}  onChange = {(event)=>{
-                        form.setFieldValue('totalKhatmsBeDistributed', event.target.value)
-                    }}/>
-                </div>
-
-                {<div style={{height:'10px'}}></div>}
-                
-
-                <div style={{display: 'flex', flexDirection: 'column', width: '250px', marginTop: '10px'}}>
-                     <Checkbox styles={{ label: {fontSize: '0.8em', fontFamily: 'Righteous'}}} color='lime' value={false} 
-                     onChange={(event) => {
-                        form.setFieldValue('donerli', !form.values.donerli)
-                                            }} label={Language["/"].Button.Header.InputSpan[8]} />
-                </div>
-
-                <div style={{display: 'flex', flexDirection: 'column', width: '250px', marginTop: '10px'}}>
-                     <Checkbox styles={{ label: {fontSize: '0.8em', fontFamily: 'Righteous'}}} color='lime' value={false} 
-                     onChange={(event) => {
-                        form.setFieldValue('makeNewHatim', !form.values.makeNewHatim)
-                                            }} label={Language["/"].Button.Header.InputSpan[4]} />
-                </div>
-
-                </DialogContainer>
-
-                <NavBtnLink onClick={async ()=>{
-                setPageName("linkGenerated")
-                let result = await dataService.yeniYillikHatim({
-                    header:form.values.header,
+            try {
+                const result = await dataService.yeniYillikHatim({
+                    header: form.values.header,
                     description: form.values.description,
-                    startingDate: form.values.startingDate,
-                    howManyDays: form.values.howManyDays,
-                    totalKhatmsBeDistributed: form.values.totalKhatmsBeDistributed,
+                    startingDate: form.values.startingDate || todayString(),
+                    howManyDays: toPositiveInt(form.values.howManyDays, 7),
+                    totalKhatmsBeDistributed: toPositiveInt(form.values.totalKhatmsBeDistributed, 30),
                     donerli: form.values.donerli,
                     makeNewHatim: form.values.makeNewHatim,
                     mevcutHatim: false
                 });
+
                 if(result.data !== undefined){
-                    form.setFieldValue('linkGenerated', 
-                        {hatimKey: result.data.hatimKey, baslik: Language["/"].Button.Final.After.Header,
-                        link: `https://hatimdagit.com/yillik/` + result.data.hatimKey, 
-                        cevap: Language["/"].Button.Final.After.Button,}
-                    );
-                    alert('Yıllık Hatim linkinizi kaydedin! Şimdilik sistem otomatik kaydetmiyor.')
+                    setLink(`https://hatimdagit.com/yillik/${result.data.hatimKey}`);
                 }else{
-                    alert('Bir hata oluştu!')
+                    setError(true);
                 }
-                }}>{Language["/"].Button.Header.Button}</NavBtnLink>
+            } catch (e) {
+                console.log(`YearlyKhatmDialog: ${e}`);
+                setError(true);
+            }
+        }
 
-                </DialogBox>
-                </>;
+        if(step === "link"){
+            return <LinkReadySheet visible={visible} link={link} error={error}
+                                   note={Language.Home.YearlyNote} onClose={closeAll} />
+        }
 
-        let LinkGenerated = (
-            <DialogBox visibility={visible} height={"290px"} top={"10%"}>
+        return (
+            <DialogBox visibility={visible}>
 
-                <DialogIcon src={close} iconSize={"30px"} alignEnd={true} onClick={
-                    ()=>{
-                        setVisible(false);
-                    }
-                } />
-
-                <DialogText fontSize={"20px"}>
-                    {form.values.linkGenerated.baslik}
-                </DialogText>
+                <DialogIcon src={close} alignEnd={true} onClick={closeAll} />
 
                 <DialogContainer>
-                <DialogText fontSize={"15px"}>
-                    {Language["/"].Button.Final.Before.Link}
-                </DialogText>
 
-                {<div style={{height:'10px'}}></div>}
+                    <DialogText fontSize={"20px"}>
+                        {Language["/"].Button.YearBased}
+                    </DialogText>
 
-                <DialogLink fontSize={"11px"}>
-                    {form.values.linkGenerated.link}
-                </DialogLink>
+                    <FieldRow>
+                        <DialogTextSpan>{labels.InputSpan[0]}</DialogTextSpan>
+                        <DialogInputBox placeholder={labels.Input[0]} {...form.getInputProps('header')} />
+                    </FieldRow>
 
-                {<div style={{height:'10px'}}></div>}
+                    <FieldRow>
+                        <DialogTextSpan>{labels.InputSpan[1]}</DialogTextSpan>
+                        <DialogTextArea rows="2" placeholder={labels.Input[1]} {...form.getInputProps('description')} />
+                    </FieldRow>
 
-                <DialogText fontSize={"15px"}>
-                    {linkKopyala}
-                </DialogText>
+                    <FieldRow>
+                        <DialogTextSpan>{labels.InputSpan[5]}</DialogTextSpan>
+                        <DialogInputBox type="date" {...form.getInputProps('startingDate')} />
+                    </FieldRow>
 
+                    <FieldRow>
+                        <DialogTextSpan>{labels.InputSpan[6]}</DialogTextSpan>
+                        <DialogInputBox type="number" inputMode="numeric" min="1" {...form.getInputProps('howManyDays')} />
+                    </FieldRow>
 
-                <DialogIcon src={copy} iconSize={"30px"} onClick={()=>{
-                   var text = `https://hatimdagit.com/yillik` + form.values.linkGenerated.hatimKey;
-                   navigator.clipboard.writeText(text).then(function() {
-                        setLinkKopyala(Language["/"].Button.Final.After.Copy)
-                   }, function(err) {
-                   
-                });
-                }}>
+                    <FieldRow>
+                        <DialogTextSpan>{labels.InputSpan[7]}</DialogTextSpan>
+                        <DialogInputBox type="number" inputMode="numeric" min="1" {...form.getInputProps('totalKhatmsBeDistributed')} />
+                    </FieldRow>
 
-                </DialogIcon>
+                    <Checkbox size="md" styles={{ label: {fontSize: '0.95rem', lineHeight: 1.4}}}
+                        checked={form.values.donerli}
+                        onChange={(event) => form.setFieldValue('donerli', event.currentTarget.checked)}
+                        label={labels.InputSpan[8]} />
+
+                    <Checkbox size="md" styles={{ label: {fontSize: '0.95rem', lineHeight: 1.4}}}
+                        checked={form.values.makeNewHatim}
+                        onChange={(event) => form.setFieldValue('makeNewHatim', event.currentTarget.checked)}
+                        label={labels.InputSpan[4]} />
+
                 </DialogContainer>
 
-            <NavBtnLink to={form.values.linkGenerated.link.replace("https://hatimdagit.com", "")}>{form.values.linkGenerated.cevap}</NavBtnLink>
+                <PrimaryButton onClick={createKhatm}>{labels.Button}</PrimaryButton>
 
             </DialogBox>
         )
-
-        return (
-            <>
-             {pageName == "enterInfo" ? EnterInfo : LinkGenerated}
-            </>
-        )
 }
 
-export default AskDialog;
+export default YearlyKhatmDialog;

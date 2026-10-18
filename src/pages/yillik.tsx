@@ -1,6 +1,7 @@
 
 
 import React, {useState, useEffect, useRef} from 'react'
+import {useLocation} from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar'
 import Question from '../components/main/Question'
@@ -16,6 +17,7 @@ import { CookiesBanner } from 'components/common/CookieConsent';
 export const Yillik = () => {
 
     const [isOpen, setIsOpen] = useState(false);
+    const {pathname} = useLocation();
     const [cizelge, setCizelge] = useState(false);
     const [cizelgeId, setCizelgeId] = useState(0);
     const [keyHolder, setKeyHolder] = useState<{key:string|undefined, subKey:string|undefined}>({key:undefined, subKey:undefined})
@@ -48,7 +50,7 @@ export const Yillik = () => {
             <CookiesBanner />
             <Pwa />
             {/* <YillikTable cizelgeRef={cizelgeRef} toggleCizelge={toggleCizelge} cizelgeId={cizelgeId} data={undefined} /> */}
-            <YillikDonerli />
+            <YillikDonerli key={pathname} />
             {/* <YillikDonerli  toggleCizelge={toggleCizelge} cizelgeId={cizelgeId} toggleCizelgeId={toggleCizelgeId}/> */}
             <Footer/>
         </>

@@ -8,7 +8,7 @@ import {
   DialogInputBox,
   DialogTextArea,
 } from '../Question/QuestionElements';
-import {NavBtnLink} from '../../common/Navbar/NavbarElements';
+import {PrimaryButton} from 'theme';
 import close from '../../../icons/close.svg';
 import {Checkbox} from '@mantine/core';
 import {useState, useEffect} from 'react';
@@ -35,13 +35,12 @@ const AskDialog = ({
   const [makeNewHatim, setMakeNewHatim] = useState (false);
 
   return (
-    <DialogBox visibility={askDialogBox} height={'510px'} top={'5%'}>
+    <DialogBox visibility={askDialogBox}>
 
       <DialogContainer>
 
         <DialogIcon
           src={close}
-          iconSize={'30px'}
           alignEnd={true}
           onClick={() => {
             changeAskDialogBox ();
@@ -51,8 +50,6 @@ const AskDialog = ({
         <DialogText fontSize={'20px'}>
           {Language['/'].Button.Header.Text}
         </DialogText>
-
-        <div style={{height: '30px'}} />
 
         <div style={{display: 'flex', flexDirection: 'column'}}>
           <DialogTextSpan>
@@ -65,8 +62,6 @@ const AskDialog = ({
             }}
           />
         </div>
-
-        <div style={{height: '10px'}} />
 
         <div style={{display: 'flex', flexDirection: 'column'}}>
           <DialogTextSpan>
@@ -82,8 +77,6 @@ const AskDialog = ({
           />
         </div>
 
-        <div style={{height: '10px'}} />
-
         <div style={{display: 'flex', flexDirection: 'column'}}>
           <DialogTextSpan>
             {Language['/'].Button.Header.InputSpan[2]}
@@ -95,8 +88,6 @@ const AskDialog = ({
             }}
           />
         </div>
-
-        {<div style={{height: '10px'}} />}
 
         {makeNewHatim == false &&
           <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -110,13 +101,12 @@ const AskDialog = ({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            width: '250px',
-            marginTop: '10px',
+            marginTop: '4px',
           }}
         >
           <Checkbox
-            styles={{label: {fontSize: '0.8em', fontFamily: 'Righteous'}}}
-            color="lime"
+            size="md"
+            styles={{label: {fontSize: '0.95rem', lineHeight: 1.4}}}
             value={false}
             onChange={event => {
               setHatimCount (1);
@@ -128,56 +118,40 @@ const AskDialog = ({
 
       </DialogContainer>
 
-<div
+<PrimaryButton
   onClick={async () => {
     setAskDialogBox (false);
-    propHideDialogBox.setHideDialogBox (true);
-    let _hatimKey = await firebase.yeniHatim (
-      hatimKonu,
-      hatimBitisTarihi,
-      false,
-      isRamazan,
-      hatimDescription,
-      makeNewHatim,
-      hatimCount
-    );
-    setHatimKey (_hatimKey);
-    const route = isRamazan ? 'ramazan' : 'cuz';
     setYazilar ({
-      baslik: Language['/'].Button.Final.After.Header,
-      link: `https://hatimdagit.com/${route}/` + _hatimKey,
-      cevap: Language['/'].Button.Final.After.Button,
+      baslik: Language['/'].Button.Final.Before.Header,
+      link: Language['/'].Button.Final.Before.LinkReady,
+      cevap: Language['/'].Button.Final.Before.Button,
     });
-  }}
-  style={{
-    borderRadius: '50px',
-    background: '#FFBF17',
-    whiteSpace: 'nowrap',
-    padding: '10px 22px',
-    color: '#000',
-    fontSize: '13px',
-    outline: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease-in-out',
-    textDecoration: 'none',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: '20px',
-    userSelect: 'none'
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.background = '#fff';
-    e.currentTarget.style.color = '#010606';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background = '#FFBF17';
-    e.currentTarget.style.color = '#000';
+    propHideDialogBox.setHideDialogBox (true);
+    try {
+      let _hatimKey = await firebase.yeniHatim (
+        hatimKonu,
+        hatimBitisTarihi,
+        false,
+        isRamazan,
+        hatimDescription,
+        makeNewHatim,
+        hatimCount
+      );
+      setHatimKey (_hatimKey);
+      const route = isRamazan ? 'ramazan' : 'cuz';
+      setYazilar ({
+        baslik: Language['/'].Button.Final.After.Header,
+        link: `https://hatimdagit.com/${route}/` + _hatimKey,
+        cevap: Language['/'].Button.Final.After.Button,
+      });
+    } catch (error) {
+      console.log (`AskDialog: ${error}`);
+      setYazilar (prev => ({...prev, error: true}));
+    }
   }}
 >
   {Language['/'].Button.Header.Button}
-</div>
+</PrimaryButton>
 
     </DialogBox>
   );

@@ -17,7 +17,7 @@ const useStyles = createStyles((theme) => ({
         : theme.colors[theme.primaryColor][0],
   },
   table:{
-    backgroundColor: '#FFBF17',
+    backgroundColor: 'var(--surface)',
     position: 'relative',
   },
 
@@ -31,7 +31,7 @@ const useStyles = createStyles((theme) => ({
     zIndex: -10,
     height: '100%',
     width: '100%',
-    backgroundColor: '#91ffbb',
+    backgroundColor: 'var(--cream)',
   },
 }));
 
@@ -100,10 +100,10 @@ export default function TableSelection({ data, cizelgeRef, toggleCizelge, cizelg
             }} >
                 <img src={close}></img>
             </ActionIcon>
-            <Text style={{fontFamily: 'Righteous'}} size="xs">Kapat</Text>
+            <Text style={{fontFamily: 'inherit'}} size="xs">Kapat</Text>
         </div>
     </div>
-    <Title align="center" m="xl" style={{fontFamily: 'Righteous'}}>Ramazan Çizelgesi</Title>
+    <Title align="center" m="xl" style={{fontFamily: 'inherit'}}>Ramazan Çizelgesi</Title>
 
     <ScrollArea  type="always" scrollbarSize={20} className={classes.scrollArea} mx="20px">
       <Table  className={classes.table}  verticalSpacing="xs">

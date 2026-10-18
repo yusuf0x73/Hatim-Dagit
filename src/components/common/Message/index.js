@@ -25,7 +25,7 @@ const Message = () => {
   return (
     <MantineProvider
     theme={{
-        fontFamily: 'Righteous, cursive',
+        fontFamily: 'inherit',
     }}
   >
     <Container id="message">

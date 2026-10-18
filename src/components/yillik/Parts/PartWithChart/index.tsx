@@ -20,14 +20,25 @@ const PWCContainer = styled.div``
 const PWCTemplate = styled.div`
     display: flex;
     flex-direction: column;
-    padding: 0 3px 0 3px;
+    min-width: 0;
 `
 
+// Kutunun altındaki "Çizelgeyi görüntüle" şeridi
 const ChartTemplate = styled.div<{bgColor: boolean}>`
-  margin-top: 20px;
-  text-align: center;
-  background-color: ${({bgColor}) => (bgColor ? "#04d654" : "#FFBF17")} ;
-  border-radius : 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 4px;
+    border-radius: 0 0 var(--radius) var(--radius);
+    border: 1.5px ${({bgColor}) => (bgColor ? 'solid var(--emerald-700)' : 'dashed #c9bfa9')};
+    border-top: 0;
+    background: ${({bgColor}) => (bgColor ? 'var(--emerald-700)' : 'var(--gold-100)')};
+    color: ${({bgColor}) => (bgColor ? '#fff' : 'var(--gold-600)')};
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: center;
+    cursor: pointer;
 `
 
 const PartWithChart = ({data, no, subKey}:{data:{isTaken: boolean, name: string, charts?: any}, no:number, subKey: string}) => {

@@ -1,23 +1,20 @@
+//                                     BİSMİLLAHİRRAHMANİRRAHİM
 
-
-
-
-
-
-
-
-
-
-import React, {useState, useEffect} from 'react'
+import React, {useState} from 'react'
+import {useLocation} from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar'
 import Footer from '../components/common/Footer';
-import Cuzler from '../components/cuzV2/Cuzler';
 import Pwa from '../components/common/Pwa';
+import { CookiesBanner } from 'components/common/CookieConsent';
+import LegacyKhatmPage from 'components/legacyKhatm/LegacyKhatmPage';
 
+// Tasarruflu yapıdan önceki hızlı hatimler
 export const CuzV2 = () => {
 
     const [isOpen, setIsOpen] = useState(false);
+    // Başka bir hatme geçilince sayfa sıfırdan kurulur (arama, açık pencere vb. taşınmaz)
+    const {pathname} = useLocation();
 
     const toggle = () => {
         setIsOpen(!isOpen);
@@ -27,8 +24,9 @@ export const CuzV2 = () => {
         <>
             <Sidebar isOpen={isOpen} toggle={toggle}/>
             <Navbar toggle={toggle}/>
+            <CookiesBanner />
             <Pwa />
-            <Cuzler />
+            <LegacyKhatmPage variant="cuzv2" key={pathname} />
             <Footer/>
         </>
     )

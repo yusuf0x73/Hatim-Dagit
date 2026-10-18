@@ -470,7 +470,7 @@ const Question = ({ toggle }) => {
         return <>
 
 
-        { (index==0) && <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+        { (index==0) && <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 0'}}>
             {
             <CuzlerHatimCard header={Language.baslik} description={Language.description}
                             progress={totalPartsTaken/(allLanguage.length*30)*100} leftCuzs={allLanguage.length*30-totalPartsTaken}

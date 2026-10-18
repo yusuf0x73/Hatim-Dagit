@@ -27,9 +27,9 @@ bottomNavigationVisible: boolean}) => {
             <HatimsWrapper active={page == "hatims" ? false : true}>
               <HatimsIcon>
                   <Book
-                    size={30}
+                    size={26}
                     strokeWidth={2}
-                    color={'black'}
+                    color={'currentColor'}
                   />
               </HatimsIcon>
               <HatimsText>
@@ -48,9 +48,9 @@ bottomNavigationVisible: boolean}) => {
             <MyInfosWrapper active={page == "myInfos" ? false : true}>
               <MyInfosIcon>
               <ChartDonut4
-                size={30}
+                size={26}
                 strokeWidth={2}
-                color={'black'}
+                color={'currentColor'}
               />
               </MyInfosIcon>
               <MyInfosText>

@@ -3,22 +3,21 @@
 //                                          ELHAMDÜLİLLAH
 
 
+import { AppPromoBanner } from 'components/common/AppDownload';
 import React, {useState, useEffect} from 'react'
-import {FaBars} from 'react-icons/fa'
-import {QuestionContainer, QuestionInnerContainer, QuestionItem, RespondContainer, RespondInnerContainer, ResponseItem
-, ResponseLogo, ResponseText, BackButtonIcon, BackContainer, DialogBox, DialogText, DialogLink, DialogIcon, DialogContainer, DialogInputBox,
-MevcutHatimTitle, MevcutHatimListeContainer, MevcutHatimListe, MevcutHatimListeEleman, MevcutHatimListeElemanLink,
-    MevcutHatimButtonContainer, MevcutHatimButtonInnerContainer, MevcutHatimButtonItem, MevcutHatimButtonLogo, MevcutHatimButtonText, CloseIcon, DialogTextSpan, NewFeatureTag, DialogTextArea} from './QuestionElements';
+import {QuestionContainer, Hero, Bismillah, HeroTitle, HeroText, Content, PrimaryAction, ActionIcon, ActionBody, ActionTitle,
+    ActionDesc, ActionArrow, SectionLabel, OptionList, OptionRow, TitleLine, NewFeatureTag, Steps, Step, StepNum, StepTitle,
+    StepText, Quote} from './QuestionElements';
 import Language from '../../../strings/index';
-import { FaGithub } from "react-icons/fa";
-import backButton from '../../../icons/button.svg';
-import Database, {DatabaseContext} from '../../../backend';
-import copy from '../../../icons/copy.svg';
-import close from '../../../icons/close.svg';
-// import { NavBtnLink } from '../../common/Navbar/NavbarElements';
+import {DatabaseContext} from '../../../backend';
 import AskDialog from '../AskDialog';
 import YearlyKhatmDialog from  './YearlyKhatmDialog';
 import Months3Dialog from '../Months3Dialog';
+import LinkReadySheet from '../LinkReadySheet';
+import {TodayReadings} from 'components/myKhatms';
+import {listKhatms} from 'localStorage/myKhatms';
+import {Book, CalendarEvent, MoonStars, Moon, Heart, ChevronRight, Bookmarks, Adjustments} from 'tabler-icons-react';
+import OzelDialog from '../OzelDialog';
 
 const Constr = ({toggle}) => {
     return <DatabaseContext.Consumer>
@@ -38,8 +37,9 @@ const Question = ({ firebase, toggle }) => {
     const [routes, setRoutes] = useState([]);
     const [hatimKey, setHatimKey] = useState("");
     const [hideDialogBox, setHideDialogBox] = useState(false);
+    // 'surah' | 'program' | null
+    const [ozelMode, setOzelMode] = useState(null);
     const [askDialogBox, setAskDialogBox] = useState(false);
-    const [linkKopyala, setLinkKopyala] = useState(Language["/"].Button.Final.Before.Copy)
     const [yazilar, setYazilar] = useState({baslik:Language["/"].Button.Final.Before.Header, link:Language["/"].Button.Final.Before.LinkReady,
      cevap: Language["/"].Button.Final.Before.Button});
     const [hatimKonu, setHatimKonu] = useState("");
@@ -95,239 +95,114 @@ const Question = ({ firebase, toggle }) => {
 
 // let isMobile = (width <= 768);
 
+    const home = Language.Home;
+
+    const otherTypes = [
+        {id: "yearBased", icon: CalendarEvent, title: Language["/"].Button.YearBased, desc: home.YearBasedDesc,
+            onClick: () => setYearBasedKhatmDialogVisible(true)},
+        {id: "months3", icon: MoonStars, title: Language["/"].Button.Aylar3, desc: home.Months3Desc,
+            tag: Language["/"].Button.NewTag, onClick: () => setMonths3DialogVisible(true)},
+        {id: "newDonerliRamazanKhatm", icon: Moon, title: Language["/"].Button.Ramazan, desc: home.RamazanDesc,
+            onClick: () => { setRamazan(true); setAskDialogBox(true); }},
+        {id: "surahKhatm", icon: Bookmarks, title: home.SurahKhatm, desc: home.SurahKhatmDesc, tag: Language["/"].Button.NewTag,
+            onClick: () => setOzelMode('surah')},
+        {id: "customKhatm", icon: Adjustments, title: home.CustomKhatm, desc: home.CustomKhatmDesc, tag: Language["/"].Button.NewTag,
+            onClick: () => setOzelMode('program')},
+        {id: "evradEzkar", icon: Heart, title: Language["/"].Button.EvradEzkar, desc: home.EvradEzkarDesc,
+            onClick: () => { window.location.href = "https://virdzikir.hatimdagit.com" }},
+    ];
+
     return (
         <>
         <QuestionContainer >
-            <DialogBox visibility={hideDialogBox} height={"290px"} top={"10%"}>
-
-                <DialogIcon src={close} iconSize={"30px"} alignEnd={true} onClick={
-                    ()=>{
-                        setYazilar({baslik:Language["/"].Button.Final.Before.Header, link:Language["/"].Button.Final.Before.LinkReady, cevap: Language["/"].Button.Final.Before.Button});
-                        setHideDialogBox(!hideDialogBox);
-                    }
-                } />
-
-                <DialogText fontSize={"20px"}>
-                    {yazilar.baslik}
-                </DialogText>
-
-                <DialogContainer>
-                <DialogText fontSize={"15px"}>
-                    {Language["/"].Button.Final.Before.Link}
-                </DialogText>
-
-                {<div style={{height:'10px'}}></div>}
-
-                <DialogLink fontSize={"11px"}>
-                    {yazilar.link}
-                </DialogLink>
-
-                {<div style={{height:'10px'}}></div>}
-
-                <DialogText fontSize={"15px"}>
-                    {linkKopyala}
-                </DialogText>
-
-
-                <DialogIcon src={copy} iconSize={"30px"} onClick={()=>{
-                    const route = ramazan ? "ramazan" : "cuz";
-                    // window.location.origin kullanarak dinamik URL alıyoruz
-                    const text = `${window.location.origin}/${route}/${hatimKey}`;
-                    
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        setLinkKopyala(Language["/"].Button.Final.After.Copy);
-                    } catch (err) {
-                        console.error("Kopyalama başarısız", err);
-                    }
-                    textArea.remove();
-                }}>
-
-                </DialogIcon>
-                </DialogContainer>
-
-            {/* <NavBtnLink to={yazilar.link.replace("https://hatimdagit.com", "")}>{yazilar.cevap}</NavBtnLink> */}
-            <div 
-                onClick={() => {
-                    const targetPath = yazilar.link.replace("https://hatimdagit.com", "");
-                    window.location.href = targetPath; // Router yerine direkt tarayıcı yönlendirmesi
+            {/** Hatim oluşturuldu, link hazır (hızlı, Ramazan ve 3 aylar ortak) */}
+            <LinkReadySheet
+                visible={hideDialogBox}
+                link={yazilar.link.startsWith("http") ? yazilar.link : null}
+                error={yazilar.error}
+                onClose={() => {
+                    setYazilar({baslik:Language["/"].Button.Final.Before.Header, link:Language["/"].Button.Final.Before.LinkReady, cevap: Language["/"].Button.Final.Before.Button});
+                    setHideDialogBox(false);
                 }}
-                style={{
-                    borderRadius: '50px',
-                    background: '#FFBF17',
-                    padding: '10px 22px',
-                    color: '#000',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    marginTop: '10px',
-                    textDecoration: 'none'
-                }}
-            >
-                {yazilar.cevap}
-            </div>
-            </DialogBox>
-            
+            />
+
             <AskDialog firebase={firebase} setHatimKey={setHatimKey} setYazilar={setYazilar}
                                  propHideDialogBox={{hideDialogBox, setHideDialogBox}}
                                 askDialogBox={askDialogBox} setAskDialogBox={setAskDialogBox}
                                 hatimKonu={hatimKonu} setHatimKonu={setHatimKonu} changeAskDialogBox={changeAskDialogBox}
-                                hatimBitisTarihi={hatimBitisTarihi} setHatimBitisTarihi={setHatimBitisTarihi} 
+                                hatimBitisTarihi={hatimBitisTarihi} setHatimBitisTarihi={setHatimBitisTarihi}
                                 isRamazan={ramazan} setHatimDescription={setHatimDescription} hatimDescription={hatimDescription}
                                 hatimCount={hatimCount} setHatimCount={setHatimCount} />
+
+            <OzelDialog mode={ozelMode || 'program'} visible={ozelMode != null} onClose={() => setOzelMode(null)} />
 
             <Months3Dialog months3DialogVisible={months3DialogVisible} setMonths3DialogVisible={setMonths3DialogVisible}
                             setHatimKey={setHatimKey} setYazilar={setYazilar} setHideDialogBox={setHideDialogBox} />
 
             <YearlyKhatmDialog  visible={yearBasedKhatmDialogVisible} setVisible={setYearBasedKhatmDialogVisible} />
 
-        {/* <BackContainer>
-                <BackButtonIcon hide={datas == 1 ? false : true} src={backButton} onClick={()=>{setDatas(routes.pop()); console.log(routes); setRoutes(routes);}}>
+            <Hero>
+                <Bismillah>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Bismillah>
+                <HeroTitle>{home.Title}</HeroTitle>
+                <HeroText>{home.Subtitle}</HeroText>
+            </Hero>
 
-                </BackButtonIcon>
-            </BackContainer> */}
+            <Content>
+                {/* Üç aylar planı olanlara her gün ne okuyacakları en üstte hatırlatılır */}
+                <TodayReadings entries={listKhatms()} compact />
 
-          
+                <PrimaryAction id={"newKhatm"} onClick={ ()=>{
+                    setRamazan(false);
+                    setAskDialogBox(true)
+                }}>
+                    <ActionIcon><Book size={30} strokeWidth={1.8} /></ActionIcon>
+                    <ActionBody>
+                        <ActionTitle large>{Language["/"].Button.Main}</ActionTitle>
+                        <ActionDesc>{home.QuickDesc}</ActionDesc>
+                    </ActionBody>
+                    <ActionArrow><ChevronRight size={26} /></ActionArrow>
+                </PrimaryAction>
 
-            <QuestionInnerContainer>
-                <QuestionItem>
-                {Language["/"].Question}
-                </QuestionItem>
-            </QuestionInnerContainer>
+                <div style={{marginTop: 18}}><AppPromoBanner /></div>
 
-            <RespondContainer>
-                           <RespondInnerContainer hatimExists={hideMevcutHatimler}>
-                                    <ResponseItem id={"newKhatm"} onClick={ ()=>{
-                                        setRamazan(false);
-                                        setAskDialogBox(true)
-                                        
-                                    }}>
-                                        <ResponseText>
-                                            {Language["/"].Button.Main}
-                                        </ResponseText>
-                                    </ResponseItem>
-                            </RespondInnerContainer>
-            </RespondContainer>
+                <SectionLabel>{home.OtherTypes}</SectionLabel>
 
-            <RespondContainer>
-                           <RespondInnerContainer hatimExists={hideMevcutHatimler}>
-                                    <ResponseItem id={"yearBased"} onClick={ ()=>{
-                                        // alert(`Yıllık Hatim yeni olup, henüz testleri tam olarak yapılmamıştır. Hatalarla karşılaşılabilir. Bu durumu göz önünde bulundurun.`)
-                                        setYearBasedKhatmDialogVisible(true);
-                                    }}>
-                                         <NewFeatureTag>{Language["/"].Button.BetaTag}</NewFeatureTag>
-                                        <ResponseText>
-                                            {Language["/"].Button.YearBased}
-                                        </ResponseText>
-                                    </ResponseItem>
-                            </RespondInnerContainer>
-            </RespondContainer>
+                <OptionList>
+                    {otherTypes.map(({id, icon: Icon, title, desc, tag, onClick}) => (
+                        <OptionRow key={id} id={id} onClick={onClick}>
+                            <ActionIcon light><Icon size={26} strokeWidth={1.8} /></ActionIcon>
+                            <ActionBody>
+                                <TitleLine>
+                                    <ActionTitle>{title}</ActionTitle>
+                                    {tag && <NewFeatureTag>{tag}</NewFeatureTag>}
+                                </TitleLine>
+                                <ActionDesc light>{desc}</ActionDesc>
+                            </ActionBody>
+                            <ActionArrow light><ChevronRight size={22} /></ActionArrow>
+                        </OptionRow>
+                    ))}
+                </OptionList>
 
-            <RespondContainer style={{marginTop: '5px'}}>
-                           <RespondInnerContainer hatimExists={hideMevcutHatimler}>
-                           
+                <SectionLabel>{home.StepsTitle}</SectionLabel>
 
-                                    <ResponseItem id={"months3"} onClick={ ()=>{
-                                        setMonths3DialogVisible(true)
-                                        
-                                    }}>
-                                         <NewFeatureTag>{Language["/"].Button.NewTag}</NewFeatureTag>
-                                        <ResponseText>
-                                        {Language["/"].Button.Aylar3}
-                                        </ResponseText>
-                                    </ResponseItem>
-                            </RespondInnerContainer>
-            </RespondContainer>
+                <Steps>
+                    {home.Steps.map(([title, text], index) => (
+                        <Step key={index}>
+                            <StepNum>{index + 1}</StepNum>
+                            <div>
+                                <StepTitle>{title}</StepTitle>
+                                <StepText>{text}</StepText>
+                            </div>
+                        </Step>
+                    ))}
+                </Steps>
 
+                <Quote>
+                    <blockquote>“{home.Hadith}”</blockquote>
+                    <figcaption>{home.HadithSource}</figcaption>
+                </Quote>
+            </Content>
 
-            <RespondContainer style={{marginTop: '5px'}}>
-                           <RespondInnerContainer hatimExists={hideMevcutHatimler}>
-                           
-
-                                    <ResponseItem id={"newDonerliRamazanKhatm"} onClick={ ()=>{
-                                        setRamazan(true);
-                                        setAskDialogBox(true)
-                                        
-                                    }}>
-                                        <ResponseText>
-                                        {Language["/"].Button.Ramazan}
-                                        </ResponseText>
-                                    </ResponseItem>
-                            </RespondInnerContainer>
-            </RespondContainer>
-
-
-            <RespondContainer style={{marginTop: '5px', paddingBottom: '50px'}}>
-                           <RespondInnerContainer hatimExists={hideMevcutHatimler}>
-                           
-
-                                    <ResponseItem  onClick={ (event)=>{
-                                        event.preventDefault();
-                                        window.location.href = "https://virdzikir.hatimdagit.com"
-                                    }}>
-                                        <ResponseText>
-                                        {Language["/"].Button.EvradEzkar}
-                                        </ResponseText>
-                                    </ResponseItem>
-                            </RespondInnerContainer>
-            </RespondContainer>
-
-            
-
-            {/* {
-            hideMevcutHatimler 
-                    ? 
-                    <>
-            <MevcutHatimButtonContainer style={{marginTop: '60px'}}>
-                           <MevcutHatimButtonInnerContainer hatimExists={hideMevcutHatimler}>
-                                    <MevcutHatimButtonItem id={"newKhatm"} onClick={ ()=>{
-                                        setMevcutHatimlerVisible(!mevcutHatimlerVisible);
-                                        
-                                    }}>
-                                        <MevcutHatimButtonText>
-                                        {Language["/"].ExistingKhatms}
-                                        </MevcutHatimButtonText>
-                                    </MevcutHatimButtonItem>
-
-                <MevcutHatimListe mevcutHatimlerVisible={mevcutHatimlerVisible} mevcutHatimlerSayisi={mevcutHatimler.length}>
-                        {  
-                        mevcutHatimler.map((item, index)=>{
-                            return <MevcutHatimListeEleman><MevcutHatimListeElemanLink href={"/cuz/" + item}>{mevcutHatimlerBaslik[index]}</MevcutHatimListeElemanLink><CloseIcon onClick={()=>{
-
-                                        let localStorageCuzKeylerArr = JSON.parse(localStorage.getItem("CuzKeyler"));
-                                        if(localStorageCuzKeylerArr == null) {
-                                            alert('Hata var!');
-                                            return;
-                                        }
-                                        localStorageCuzKeylerArr.splice(index, 1);
-                                        localStorage.setItem("CuzKeyler", JSON.stringify(localStorageCuzKeylerArr))
-
-                                        let localStorageCuzKeylerArrBaslik = JSON.parse(localStorage.getItem("CuzKeylerBaslik"));
-                                        localStorageCuzKeylerArrBaslik.splice(index, 1)
-                                        localStorage.setItem("CuzKeylerBaslik", JSON.stringify(localStorageCuzKeylerArrBaslik))
-                                        
-                                        setMevcutHatimler(localStorageCuzKeylerArr);
-                                        setMevcutHatimlerBaslik(localStorageCuzKeylerArrBaslik);
-                            }} /></MevcutHatimListeEleman>
-                        })
-                    }
-                </MevcutHatimListe>
-                            </MevcutHatimButtonInnerContainer>
-            </MevcutHatimButtonContainer>
-                
-            
-
-            
-                
-                    </>
-                    :
-                    <></>
-} */}
-           
         </QuestionContainer>
         </>
     )

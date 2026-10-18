@@ -7,11 +7,14 @@ import { FooterContainer, FooterWrapper, FooterLinksContainer, FooterLinkWrapper
 Business, BusinessWrap, BusinessLogo, WebsiteRights, BusinessIcons, BusinessIconLink, BusinessVisit, BusinessMainPage, BusinessFeedback, 
 BusinessPrivacyPolicy,
 BusinessTermsConditions,
-BusinessCookies} from "./FooterElements";
+BusinessCookies, BusinessDownload} from "./FooterElements";
 import {Linker} from '../../main/Question/QuestionElements';
 import { FaGithub } from "react-icons/fa";
 import {DatabaseContext} from '../../../backend';
 import {version} from '../../../common'
+import {LanguagePills} from '../LanguagePicker';
+import {openAppDownload, isInstalledApp} from '../AppDownload';
+import {BrandGooglePlay} from 'tabler-icons-react';
 
 
 
@@ -64,6 +67,16 @@ const Footer = () => {
                         <BusinessFeedback onClick={()=>window.location.href = "mailto:hep.beraber.okuyalim@gmail.com"}>
                             {Language.Footer.Feedback}
                         </BusinessFeedback>
+
+                        {!isInstalledApp() &&
+                            <BusinessDownload type="button" id="footerDownload" onClick={openAppDownload}>
+                                <BrandGooglePlay size={22} />
+                                {Language.App.Download}
+                            </BusinessDownload>}
+
+                        <div style={{margin: '18px 0 6px'}}>
+                            <LanguagePills dark />
+                        </div>
 
 
                          <BusinessLogo to="starting">

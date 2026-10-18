@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button, createStyles} from '@mantine/core';
+import {Button} from '@mantine/core';
 import {
   Container,
   YesNoButton,
@@ -14,12 +14,6 @@ import Language from '../../../strings';
 import {useDispatch} from 'react-redux';
 import {loadingOverlayActions} from 'features/loadingOverlay';
 
-const useStyles = createStyles (theme => ({
-  button: {
-    color: 'black',
-  },
-}));
-
 const YesNoDialog = ({
   yesHandler,
   yesHandlerParameters,
@@ -27,7 +21,6 @@ const YesNoDialog = ({
   hatimlerVisibilities,
   toggleHatimlerVisibilities,
 }) => {
-  const {classes} = useStyles ();
   const {visible, text} = useYesNoDialogAlert ();
   const dispatch = useDispatch ();
 
@@ -42,8 +35,8 @@ const YesNoDialog = ({
             <YesNoButtonLayout>
 
               <Button
-                className={classes.button}
-                color="yellow"
+                fullWidth
+                radius="md"
                 onClick={() => {
                   if (yesHandlerParameters != null) {
                     yesHandler (yesHandlerParameters);
@@ -55,8 +48,9 @@ const YesNoDialog = ({
                 {Language['/cuz'].AddKhatmAlert.YesButton}
               </Button>
               <Button
-                color="red"
-                className={classes.button}
+                fullWidth
+                radius="md"
+                variant="default"
                 onClick={noHandler}
               >
                 {Language['/cuz'].AddKhatmAlert.NoButton}

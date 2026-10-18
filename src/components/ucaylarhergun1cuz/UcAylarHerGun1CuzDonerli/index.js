@@ -378,7 +378,13 @@ const Constr = ({ toggle, database, toggleCizelge, cizelgeId, toggleCizelgeId, c
                     setHideDialogBox(!hideDialogBox);
                     if(partIptal)
                     {
-                        await database.cuzIptal(hatimNo, activeHatimSubKey);
+                        let cancelResult = await database.cuzIptal(hatimNo, activeHatimSubKey);
+                        // İptal sunucuda başarısızsa cihazdaki kaydı silme
+                        if(cancelResult.code == -1){
+                            alert('Cüz iptal edilemedi! Lütfen internet bağlantınızı kontrol edip tekrar deneyin.');
+                            setAllLanguage(objectToArray(await database.hatimGetir()));
+                            return;
+                        }
                         partsProcessor.cancelPart({key: extractKey(), subKey: activeHatimSubKey, partId: hatimNo})
                         
                         if(localStorage.getItem("cuz") == null) initializeLocalStorage("cuz");
@@ -482,7 +488,7 @@ const Constr = ({ toggle, database, toggleCizelge, cizelgeId, toggleCizelgeId, c
         
         return <>
         
-            { (index==0) && <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+            { (index==0) && <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 0'}}>
                 {
                 <CuzlerHatimCard header={Language.baslik} description={Language.description}
                                 progress={totalPartsTaken/(allLanguage.length*30)*100} leftCuzs={allLanguage.length*30-totalPartsTaken}
