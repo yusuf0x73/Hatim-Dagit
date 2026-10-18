@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - run: yarn install --ignore-engines && CI='' yarn build
         env:
           REACT_APP_apiKey: '${{ secrets.FIREBASE_APIKEY }}'
@@ -27,8 +27,14 @@ jobs:
           REACT_APP_dev: '${{ secrets.DEV_MODE }}'
           CYPRESS_DEV_MODE: '${{ secrets.DEV_MODE }}'
           SKIP_PREFLIGHT_CHECK: '${{ secrets.SKIP_PREFLIGHT_CHECK }}'
-          # Lokaldeki .env ile aynı: build sırasında ESLint çalışmaz
+          # Lokaldeki çalıştırma ile aynı: Node 18 + eski OpenSSL (CRA 4 / webpack 4), build'de ESLint yok
+          NODE_OPTIONS: '--openssl-legacy-provider'
           DISABLE_ESLINT_PLUGIN: 'true'
+      # firebase-tools 12.9.1'in bağımlılığı universal-analytics@0.5.4 artık yalnızca ESM olan uuid@14 kullanıyor;
+      # Node 16/18 bunu require edemiyor (ERR_REQUIRE_ESM). Deploy Node 20 ile yapılır.
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
