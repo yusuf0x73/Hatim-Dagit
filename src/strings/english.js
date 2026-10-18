@@ -139,7 +139,7 @@ let english = {
     OtherTitle: '{n}',
     TakenBy: 'Taken by: {name}',
     NameLabel: 'Your name',
-    NamePlaceholder: 'e.g. Aisha',
+    NamePlaceholder: 'e.g. Safa',
     NameHint: 'Your name is shown in the list.',
     TakeButton: 'Take part',
     RenameButton: 'Update name',

@@ -143,7 +143,7 @@ Bu uygulama üzerinden siyasi veya dini motifli terör örgütleri adına Hatim 
     OtherTitle: '{n}',
     TakenBy: 'Alan kişi: {name}',
     NameLabel: 'İsminiz',
-    NamePlaceholder: 'Örn. Ayşe',
+    NamePlaceholder: 'Örn. Safa',
     NameHint: 'İsminiz listede görünür.',
     TakeButton: 'Cüzü al',
     RenameButton: 'İsmi güncelle',

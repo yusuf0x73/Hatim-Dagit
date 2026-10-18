@@ -141,7 +141,7 @@ let Arabic = {
     OtherTitle: '{n}',
     TakenBy: 'أخذه: {name}',
     NameLabel: 'اسمك',
-    NamePlaceholder: 'مثلاً: عائشة',
+    NamePlaceholder: 'مثلاً: صفا',
     NameHint: 'يظهر اسمك في القائمة.',
     TakeButton: 'خذ الجزء',
     RenameButton: 'تحديث الاسم',
