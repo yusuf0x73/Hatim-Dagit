@@ -54,6 +54,38 @@ const parseKhatms = (data, hatimKey) => {
   return {api: 2, khatms: keys.map (key => ({...data[key], subKey: key}))};
 };
 
+/*
+  Cihazdaki eski kayıtlar asla ezilmez:
+  - Çok eski sürümlerde 'cuz' bir diziydi (api 1). Yeni biçim yazılmadan önce bu dizi 'cuz_v1'e taşınır.
+  - Beklenmedik bir biçim varsa (bozuk JSON, dizi olması gereken yerde nesne) hiç yazılmaz.
+*/
+const readRaw = name => {
+  const raw = localStorage.getItem (name);
+  if (raw == null) return {exists: false};
+  try {
+    return {exists: true, value: JSON.parse (raw)};
+  } catch (error) {
+    return {exists: true, broken: true};
+  }
+};
+
+const safeWriteV1 = list => {
+  const current = readRaw ('cuz_v1');
+  if (current.exists && (current.broken || !Array.isArray (current.value))) return;
+  localStorage.setItem ('cuz_v1', JSON.stringify (list));
+};
+
+const safeWriteV2 = obj => {
+  const current = readRaw ('cuz');
+  if (current.exists && current.broken) return;
+  if (current.exists && Array.isArray (current.value)) {
+    const v1 = readRaw ('cuz_v1');
+    if (v1.exists) return; // iki eski kayıt da var: hiçbirine dokunulmaz
+    localStorage.setItem ('cuz_v1', JSON.stringify (current.value));
+  }
+  localStorage.setItem ('cuz', JSON.stringify (obj));
+};
+
 const readLocalParts = api => {
   try {
     if (api === 1) {
@@ -219,12 +251,11 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
     if (api === 1) {
       const list = readLocalParts (1);
       list.push (no);
-      localStorage.setItem ('cuz_v1', JSON.stringify (list));
+      safeWriteV1 (list);
     } else {
-      if (localStorage.getItem ('cuz') == null) initializeLocalStorage ('cuz');
       const obj = readLocalParts (2);
       obj[subKey] = [...(obj[subKey] || []), no];
-      localStorage.setItem ('cuz', JSON.stringify (obj));
+      safeWriteV2 (obj);
     }
     if (variant === 'ucaylarhergun1cuz') partsProcessor.takePart ({key: hatimKey, subKey, partId: no});
     rememberPart ({key: hatimKey, type: config.type, route: `/${config.route}/${hatimKey}`, title: first.baslik,
@@ -234,11 +265,11 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
 
   const saveLocalRelease = (subKey, no) => {
     if (api === 1) {
-      localStorage.setItem ('cuz_v1', JSON.stringify (removeAll_v1 (readLocalParts (1), no)));
+      safeWriteV1 (removeAll_v1 (readLocalParts (1), no));
     } else {
       const obj = readLocalParts (2);
       obj[subKey] = obj[subKey] || [];
-      localStorage.setItem ('cuz', JSON.stringify (removeAll (obj, no, subKey)));
+      safeWriteV2 (removeAll (obj, no, subKey));
     }
     if (variant === 'ucaylarhergun1cuz') partsProcessor.cancelPart ({key: hatimKey, subKey, partId: no});
     forgetPart ({key: hatimKey, subKey, no});
