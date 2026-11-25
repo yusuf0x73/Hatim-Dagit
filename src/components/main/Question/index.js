@@ -18,7 +18,7 @@ import {TodayReadings} from 'components/myKhatms';
 import {listKhatms} from 'localStorage/myKhatms';
 import {Book, CalendarEvent, MoonStars, Moon, Heart, ChevronRight, Bookmarks, Adjustments} from 'tabler-icons-react';
 import OzelDialog from '../OzelDialog';
-import Months3Intro from '../Months3Intro';
+import {useLocation, useHistory} from 'react-router-dom';
 import {ReadQuranBanner} from 'components/khatmKit';
 
 const Constr = ({toggle}) => {
@@ -54,6 +54,16 @@ const Question = ({ firebase, toggle }) => {
     const [hatimDescription, setHatimDescription] = useState("")
     const [hatimCount, setHatimCount] = useState(1)
     const [months3DialogVisible, setMonths3DialogVisible] = useState(false)
+
+    // Üç aylar tanıtımındaki "oluştur" (hangi sayfada açılırsa açılsın) buraya gelir
+    const location = useLocation();
+    const history = useHistory();
+    const openMonths3 = location.state && location.state.openMonths3;
+    useEffect(() => {
+        if (!openMonths3) return;
+        setMonths3DialogVisible(true);
+        history.replace('/', {});
+    }, [openMonths3]);
     const [yearBasedKhatmDialogVisible, setYearBasedKhatmDialogVisible] = useState(false)
     
     const changeAskDialogBox = () => {
@@ -144,7 +154,6 @@ const Question = ({ firebase, toggle }) => {
             <YearlyKhatmDialog  visible={yearBasedKhatmDialogVisible} setVisible={setYearBasedKhatmDialogVisible} />
 
             {/* İlk girişte üç aylar hatmi tanıtımı (dönem başına bir kez) */}
-            <Months3Intro onCreate={() => setMonths3DialogVisible(true)} />
 
             <Hero>
                 <Bismillah>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Bismillah>

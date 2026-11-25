@@ -18,6 +18,7 @@ import { PrivacyPolicy } from 'pages/privacypolicy';
 import { TermsConditions } from 'pages/termsconditions';
 import {Cookies} from 'pages/cookies'
 import {Oku} from 'pages/oku';
+import Months3Intro from 'components/main/Months3Intro';
 
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
       </Switch>
       </ErrorBoundary>
       <AppDownloadHost />
+      <Months3Intro />
     </BrowserRouter>
     </>
   );

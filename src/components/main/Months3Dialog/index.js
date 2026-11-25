@@ -13,22 +13,13 @@ import { getMonths3Date } from "../../../common";
 import {DatabaseContext} from '../../../backend'
 import { PLANS, NEW_PLAN_IDS, periodEndDate, toDate, isRotating } from 'plans';
 import { rememberCreated } from 'localStorage/myKhatms';
+import { months3Texts } from './texts';
 
 const OPTION_IDS = ['eachday1part', ...NEW_PLAN_IDS];
 
-const OPTION_META = {
-  eachday1part: '30 cüz · her gün sıradaki cüz',
-  tenPagesThenJuz: '60 parça (yarım cüz)',
-  fivePagesThenTenPages: '120 parça (hizb, 5 sayfa)',
-  samePage: '604 sayfa',
-  sameSurah: '114 sûre',
-};
+const text = months3Texts();
 
-const OPTION_DESCRIPTION = {
-  eachday1part: 'Aldığınız cüzden başlayarak her gün bir sonraki cüzü okursunuz.',
-};
-
-const formatLong = date => date.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'});
+const formatLong = date => date.toLocaleDateString(text.locale, {day: 'numeric', month: 'long', year: 'numeric'});
 
 const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimKey, setYazilar, setHideDialogBox}) => {
 
@@ -97,7 +88,7 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
     if(result.data === undefined) throw result.error;
 
     rememberCreated({key: result.data.hatimKey, type: 'ucaylar', route: `/ucaylar/${result.data.hatimKey}`,
-                     title: hatimKonu || PLANS[planId].title, plan: planId, period, rotating: isRotating(planId, rotating)});
+                     title: hatimKonu || text.plan(planId).title, plan: planId, period, rotating: isRotating(planId, rotating)});
     setHatimKey(result.data.hatimKey);
     linkReady("ucaylar", result.data.hatimKey);
   }
@@ -125,7 +116,7 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
 
             <DialogHeader>
                 <DialogText>
-                    {type === "options" ? Language["/"].Button.Header.Text3MonthProgram : PLANS[type].title}
+                    {type === "options" ? Language["/"].Button.Header.Text3MonthProgram : text.plan(type).title}
                 </DialogText>
             </DialogHeader>
 
@@ -135,8 +126,8 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
                 <OptionContainer>
                     {OPTION_IDS.map(planId => (
                         <Option key={planId} id={planId} onClick={()=>setType(planId)}>
-                            <OptionTitle>{PLANS[planId].title}</OptionTitle>
-                            <OptionMeta>{OPTION_META[planId]}</OptionMeta>
+                            <OptionTitle>{text.plan(planId).title}</OptionTitle>
+                            <OptionMeta>{text.plan(planId).meta}</OptionMeta>
                         </Option>
                     ))}
                 </OptionContainer>
@@ -144,9 +135,9 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
 
             {type!="options" &&
             <>
-                        <BackLink onClick={()=>{ setType("options"); setRotating(null); }}>‹ Diğer seçenekler</BackLink>
+                        <BackLink onClick={()=>{ setType("options"); setRotating(null); }}>{text.back}</BackLink>
 
-                        <OptionText>{PLANS[type].description || OPTION_DESCRIPTION[type]}</OptionText>
+                        <OptionText>{text.plan(type).description}</OptionText>
 
                         {/* Dönerli: her gün sıradaki yer; sabit: her gün aynı yer */}
                         {PLANS[type].rotatingText &&
@@ -156,8 +147,8 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
                                                 aria-checked={isRotating(type, rotating) === value}
                                                 active={isRotating(type, rotating) === value}
                                                 onClick={() => setRotating(value)}>
-                                        <strong>{value ? 'Dönerli' : 'Sabit'}</strong>
-                                        <span>{value ? PLANS[type].rotatingText : PLANS[type].fixedText}</span>
+                                        <strong>{value ? text.rotating : text.fixed}</strong>
+                                        <span>{value ? text.plan(type).rotatingText : text.plan(type).fixedText}</span>
                                     </ModeOption>
                                 ))}
                             </ModeRow>}
