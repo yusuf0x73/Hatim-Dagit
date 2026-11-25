@@ -10,6 +10,7 @@ import {db, localDatabase} from '../../backend';
 import { useContext } from "react";
 import { partsProcessor } from "localStorage/parts";
 import { extractKey } from "common";
+import {tx} from '../../strings/tx';
 
 const initialState = {
     visible: false,
@@ -47,11 +48,11 @@ const takeCuzV3 = createAsyncThunk("cuzModal/takeCuzV3", async ({nameState, cuzN
     if(data == 200){
         let {data, error} = localDatabase.cuzAl(nameState, cuzNo, subKey, true, makeNewKhatm);
         if(data == undefined){
-            alert('Cüz bilgileri cihazınıza kaydedilemedi ancak Cüz alındı!')
+            alert(tx('Cüz bilgileri cihazınıza kaydedilemedi ancak Cüz alındı!', 'The juz was taken, but it could not be saved on your device.', 'أُخذ الجزء، لكن تعذّر حفظه على جهازك.'))
         }
     }
     else{
-        alert("Cüz alınamadı! Bir başkası tarafından alınmış ya da internet bağlantısı koptu!");
+        alert(tx('Cüz alınamadı! Bir başkası tarafından alınmış ya da internet bağlantısı koptu!', 'Could not take the juz. Someone else took it or the connection was lost.', 'تعذّر أخذ الجزء. ربما أخذه شخص آخر أو انقطع الاتصال.'));
     }
 })
 
@@ -60,11 +61,11 @@ const changeCuzV3 = createAsyncThunk("cuzModal/changeCuzV3", async ({nameState, 
     if(data == 200) {
         let {data, error} = localDatabase.cuzIsimDegistir(nameState, cuzNo, subKey);
         if(data == undefined){
-            alert('Cüz bilgileri cihazınıza kaydedilemedi ancak Cüz alındı!')
+            alert(tx('Cüz bilgileri cihazınıza kaydedilemedi ancak Cüz alındı!', 'The juz was taken, but it could not be saved on your device.', 'أُخذ الجزء، لكن تعذّر حفظه على جهازك.'))
         }
     }
     else{
-        alert("Cüz güncellenemedi!");
+        alert(tx('Cüz güncellenemedi!', 'Could not update the juz.', 'تعذّر تحديث الجزء.'));
     }
 })
 
@@ -73,11 +74,11 @@ const cancelCuzV3 = createAsyncThunk("cuzModal/cancelCuzV3", async ({ cuzNo, sub
     if(result.data == 200) {
         const {data, error} = localDatabase.cuzIptal(cuzNo, subKey);
         if(data == undefined){
-            alert('Cüz bilgileri cihazınıza kaydedilemedi ancak Cüz iptal edildi!')
+            alert(tx('Cüz bilgileri cihazınıza kaydedilemedi ancak Cüz iptal edildi!', 'The juz was released, but this could not be saved on your device.', 'تُرك الجزء، لكن تعذّر حفظ ذلك على جهازك.'))
         }
     }
     else{
-        alert("Cüz iptal edilemedi!");
+        alert(tx('Cüz iptal edilemedi!', 'Could not release the juz.', 'تعذّر ترك الجزء.'));
     }
 })
 

@@ -230,6 +230,7 @@ let Arabic = {
       EvradEzkar: 'توزيع الأوراد والأذكار',
       Header: {
         Text: 'إنشاء ختمة',
+        Text3MonthProgram: 'اختر خطة',
         InputSpan: [
           'عنوان',
           'الوصف',
@@ -241,7 +242,7 @@ let Arabic = {
           'إجمالي عدد الختمات',
           'ختمة دوّارة',
         ],
-        Input: ['الرجاء إدخال عنوان'],
+        Input: ['الرجاء إدخال عنوان', 'الرجاء إدخال وصف للختمة'],
         Button: 'استمر',
       },
       Final: {
@@ -291,6 +292,7 @@ let Arabic = {
     Button: {
       Question: 'أدخل اسمك للحصول على الجزء:',
       Take: 'خذ الجزء',
+      TakeCancel: 'اترك الجزء',
     },
     ShareBox: {
       Title: 'حدد تطبيقًا لمشاركته:',
@@ -378,6 +380,7 @@ let Arabic = {
     Button: {
       Question: 'أدخل اسمك للحصول على الجزء:',
       Take: 'خذ الجزء',
+      TakeCancel: 'اترك الجزء',
     },
     ShareBox: {
       Title: 'حدد تطبيقًا لمشاركته:',

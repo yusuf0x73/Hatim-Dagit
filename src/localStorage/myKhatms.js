@@ -6,6 +6,9 @@
  * (CuzKeyler, LocalDb) sadece okunur ve listeye eklenir, hiçbir zaman değiştirilmez.
  */
 
+import {juzLabel} from '../plans/quran';
+import {tx} from '../strings/tx';
+
 const STORE = 'hd.myKhatms';
 const TICKS = 'hd.planTicks';
 const HIDDEN = 'hd.hiddenKhatms';
@@ -28,12 +31,12 @@ const writeJson = (name, value) => {
 };
 
 export const KHATM_TYPES = {
-  cuz: 'Hızlı Hatim',
-  ramazan: 'Ramazan Dönerli',
-  yillik: 'Yıllık Hatim',
-  ucaylarhergun1cuz: '3 Aylar · Günde 1 cüz',
-  ucaylar: '3 Aylar',
-  ozel: 'Özel Hatim',
+  cuz: tx ('Hızlı Hatim', 'Quick khatm', 'ختمة سريعة'),
+  ramazan: tx ('Ramazan Dönerli', 'Rotating Ramadan', 'رمضان الدوّارة'),
+  yillik: tx ('Yıllık Hatim', 'Yearly khatm', 'ختمة سنوية'),
+  ucaylarhergun1cuz: tx ('3 Aylar · Günde 1 cüz', 'Three months · 1 juz a day', 'الأشهر الثلاثة · جزء يوميًا'),
+  ucaylar: tx ('3 Aylar', 'Three months', 'الأشهر الثلاثة'),
+  ozel: tx ('Özel Hatim', 'Custom khatm', 'ختمة خاصة'),
 };
 
 const upsert = (key, update) => {
@@ -122,7 +125,7 @@ const legacyEntries = () => {
     const parts = [];
     Object.entries (value).forEach (([subKey, sub]) => {
       if (subKey === 'title' || !sub || !Array.isArray (sub.parts)) return;
-      sub.parts.forEach (no => parts.push ({subKey, no: String (no), label: `${no}. cüz`}));
+      sub.parts.forEach (no => parts.push ({subKey, no: String (no), label: juzLabel (no)}));
     });
     add (key, current => ({
       type: current.type && current.type !== 'cuz' ? current.type : isUcAylar ? 'ucaylarhergun1cuz' : 'cuz',
@@ -141,7 +144,7 @@ const legacyEntries = () => {
     Object.entries (value).forEach (([subKey, sub]) => {
       if (!sub || typeof sub !== 'object' || !sub.parts) return;
       Object.entries (sub.parts).forEach (([no, part]) => {
-        if (part && part.isTaken) parts.push ({subKey, no: String (no), label: `${no}. cüz`});
+        if (part && part.isTaken) parts.push ({subKey, no: String (no), label: juzLabel (no)});
       });
     });
     if (parts.length === 0 && !value.adminToken) return;

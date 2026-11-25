@@ -6,6 +6,7 @@
   bileşendi; artık hızlı hatimdeki bütün özelliklerle tek bileşen olarak çalışır.
 */
 
+import {juzLabel} from 'plans/quran';
 import React, {useEffect, useMemo, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 import {CalendarEvent, Plus, ChevronDown, ChevronUp, Check} from 'tabler-icons-react';
@@ -133,7 +134,7 @@ const ramazanSchedule = no => {
       index: i,
       group: MONTH_NAMES[2],
       label: `${fmt (Language.Kit.Day, {n: i + 1})} · ${formatDate (date)}`,
-      title: `${((Number (no) - 1 + i) % 30) + 1}. cüz`,
+      title: juzLabel (((Number (no) - 1 + i) % 30) + 1),
       isToday: date.toDateString () === today,
     };
   });
@@ -240,7 +241,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
   const myParts = khatms.flatMap ((k, index) =>
     cevaplar (k).filter (c => c.alindi && isMine (k.subKey, c.cevap))
       .map (c => ({
-        label: khatms.length > 1 ? `${fmt (Language.Kit.KhatmNo, {n: index + 1})} · ${c.cevap}. cüz` : `${c.cevap}. cüz`,
+        label: khatms.length > 1 ? `${fmt (Language.Kit.KhatmNo, {n: index + 1})} · ${juzLabel (c.cevap)}` : juzLabel (c.cevap),
         // Çizelgeli sayfalarda dokununca doğrudan okuma çizelgesi açılır
         onClick: config.chart ? () => setChart ({subKey: k.subKey, no: c.cevap}) : undefined,
       })));
@@ -259,7 +260,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
     }
     if (variant === 'ucaylarhergun1cuz') partsProcessor.takePart ({key: hatimKey, subKey, partId: no});
     rememberPart ({key: hatimKey, type: config.type, route: `/${config.route}/${hatimKey}`, title: first.baslik,
-                   subKey, no, label: `${no}. cüz`, plan: variant === 'ucaylarhergun1cuz' ? 'eachday1part' : undefined});
+                   subKey, no, label: juzLabel (no), plan: variant === 'ucaylarhergun1cuz' ? 'eachday1part' : undefined});
     setLocalParts (readLocalParts (api));
   };
 
@@ -289,7 +290,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
     }
     saveLocalTake (subKey, no);
     setPart (null);
-    setJustTaken ({title: takenTitle (`${no}. cüz`), read: juzRange (no),
+    setJustTaken ({title: takenTitle (juzLabel (no)), read: juzRange (no),
                text: config.chart ? Language.Kit.TakenChartHint : undefined});
   };
 
@@ -327,7 +328,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
     const claimable = c.alindi && !mine && !isAdmin && hasSecret ({hatimKey, subKey, legacy: true});
     if (c.alindi && !mine && !isAdmin && !claimable) {
       if (config.chart) setChart ({subKey, no: c.cevap});
-      else setReact ({subKey, no: c.cevap, badge: c.cevap, label: `${c.cevap}. cüz`, holder: c.isim});
+      else setReact ({subKey, no: c.cevap, badge: c.cevap, label: juzLabel (c.cevap), holder: c.isim});
       return;
     }
     setPart ({subKey, no: c.cevap, name: c.isim, mode: !c.alindi ? 'take' : mine ? 'mine' : claimable ? 'other' : 'admin'});
@@ -477,7 +478,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
         <StopAutoButton type="button" onClick={stopAuto}>{Language.Kit.StopAuto}</StopAutoButton>}
 
       <PartSheet visible={part != null} onClose={() => setPart (null)} busy={busy}
-                 mode={part ? part.mode : 'take'} badge={part ? part.no : ''} label={part ? `${part.no}. cüz` : ''}
+                 mode={part ? part.mode : 'take'} badge={part ? part.no : ''} label={part ? juzLabel (part.no) : ''}
                  read={part ? juzRange (part.no) : undefined}
                  holder={part ? part.name : ''}
                  onTake={take} onRename={rename} onRelease={release}
@@ -494,7 +495,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
 
       {config.chart &&
         <ChartSheet visible={chart != null} onClose={() => setChart (null)}
-                    title={chart ? `${chart.no}. cüz · ${config.chart === 'ramazan' ? Language.Kit.RamazanChart : Language.Kit.ChartTitle}` : ''}
+                    title={chart ? `${juzLabel (chart.no)} · ${config.chart === 'ramazan' ? Language.Kit.RamazanChart : Language.Kit.ChartTitle}` : ''}
                     subtitle={first.baslik}
                     hint={config.chart === 'ramazan' ? Language.Kit.RamazanHint : Language.Kit.Months3Hint}
                     days={chartDays}

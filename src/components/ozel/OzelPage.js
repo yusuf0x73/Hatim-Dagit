@@ -14,6 +14,8 @@ import {db} from 'backend';
 import Language from 'strings';
 import {extractKey} from 'common';
 import {unitOf} from 'plans/units';
+import {juzLabel} from 'plans/quran';
+import {tx} from 'strings/tx';
 import {listKhatms, rememberPart, forgetPart, rememberTitle, hideKhatm} from 'localStorage/myKhatms';
 import {
   ShareActions, PartSheet, ReactionChips, ReactionPicker, ReactSheet, hasSecret, failMessage, takeFailMessage, ConfirmSheet, EditSheet, KhatmCard, fmt, chartStore,
@@ -251,7 +253,7 @@ const OzelPage = () => {
 
   const renderKhatm = khatm => {
     const numbers = Array.from ({length: unit.slots}, (_, i) => String (i + 1)).filter (no => passes (khatm, no));
-    if (numbers.length === 0) return <Empty>{term ? 'Aramanıza uygun parça yok.' : 'Gösterilecek parça yok.'}</Empty>;
+    if (numbers.length === 0) return <Empty>{term ? tx ('Aramanıza uygun parça yok.', 'No parts match your search.', 'لا توجد أقسام تطابق بحثك.') : tx ('Gösterilecek parça yok.', 'No parts to show.', 'لا توجد أقسام لعرضها.')}</Empty>;
 
     if (unit.list) {
       return (
@@ -303,7 +305,7 @@ const OzelPage = () => {
                 <GroupNo>{group.juz}</GroupNo>
                 <GroupInfo>
                   <GroupTitle>
-                    <span>{group.juz}. cüz</span>
+                    <span>{juzLabel (group.juz)}</span>
                     <small>{free} {Language.CuzGrid.Available.toLocaleLowerCase ()}</small>
                   </GroupTitle>
                   {collapsible && <MiniBar aria-hidden="true">
@@ -322,34 +324,35 @@ const OzelPage = () => {
   };
 
   const selectedKhatm = part ? khatms.find (k => k.subKey === part.subKey) : null;
-  const searchHint = unit.kind === 'surah' ? 'Sûre ara (ör. Yâsîn, 67)'
-    : unit.kind === 'page' || unit.kind === 'pages' ? 'Sayfa numarası (1–604)'
-    : unit.group ? 'Cüz numarası (1–30)' : null;
+  const searchHint = unit.kind === 'surah' ? tx ('Sûre ara (ör. Yâsîn, 67)', 'Search surahs (e.g. Ya-Sin, 67)', 'ابحث عن سورة (مثل يس، 67)')
+    : unit.kind === 'page' || unit.kind === 'pages' ? tx ('Sayfa numarası (1–604)', 'Page number (1–604)', 'رقم الصفحة (1–604)')
+    : unit.group ? tx ('Cüz numarası (1–30)', 'Juz number (1–30)', 'رقم الجزء (1–30)') : null;
 
   return (
     <Page>
       <Wrap>
         <KhatmCard title={data.header || unit.noun} description={data.description}
                    taken={taken} total={total} duaDate={data.startingDate || data.duaDate}
-                   badges={[`${khatms.length > 1 ? `${khatms.length} hatim × ` : ''}${unit.slots} ${unit.countNoun || unit.noun}`]}
+                   badges={[`${khatms.length > 1 ? tx (`${khatms.length} hatim × `, `${khatms.length} khatms × `, `${khatms.length} ختمات × `) : ''}${unit.slots} ${unit.countNoun || unit.noun}`]}
                    myParts={myParts} isAdmin={isAdmin}
-                   takenLabel={unit.kind === 'recite' ? 'Alınan okumalar' : unit.kind === 'juz' ? undefined : 'Alınan parçalar'}
-                   leftLabel={left => `${left} ${unit.countNoun || unit.noun} kaldı`}
-                   mineLabel={unit.kind === 'recite' ? 'Aldığınız okumalar' : 'Aldıklarınız'}
+                   takenLabel={unit.kind === 'recite' ? tx ('Alınan okumalar', 'Readings taken', 'القراءات المأخوذة') : unit.kind === 'juz' ? undefined : tx ('Alınan parçalar', 'Parts taken', 'الأقسام المأخوذة')}
+                   leftLabel={left => tx (`${left} ${unit.countNoun || unit.noun} kaldı`, `${left} ${unit.countNoun || unit.noun} left`, `بقي ${left} ${unit.countNoun || unit.noun}`)}
+                   mineLabel={unit.kind === 'recite' ? tx ('Aldığınız okumalar', 'Your readings', 'قراءاتك') : tx ('Aldıklarınız', 'Yours', 'ما أخذته')}
                    onDelete={() => setConfirm ('delete')} onEdit={() => setEditing (true)} />
 
-        <SectionTitle>{unit.kind === 'recite' ? 'Almak istediğiniz okumaya dokunun' : 'Almak istediğiniz parçaya dokunun'}</SectionTitle>
+        <SectionTitle>{unit.kind === 'recite' ? tx ('Almak istediğiniz okumaya dokunun', 'Tap the reading you want to take', 'اضغط على القراءة التي تريد أخذها')
+          : tx ('Almak istediğiniz parçaya dokunun', 'Tap the part you want to take', 'اضغط على القسم الذي تريد أخذه')}</SectionTitle>
         <Toolbar>
           {taken < total &&
             <LuckyButton type="button" id="nextFree" onClick={pickNextFree}>
-              <HandClick size={22} /> Sıradakini bana verin
+              <HandClick size={22} /> {tx ('Sıradakini bana verin', 'Give me the next one', 'أعطني التالي')}
             </LuckyButton>}
           {searchHint &&
             <SearchInput value={query} placeholder={searchHint}
                          inputMode={unit.kind === 'surah' ? 'text' : 'numeric'}
                          onChange={event => setQuery (event.target.value)} />}
           <FilterRow>
-            {[['all', 'Tümü'], ['free', 'Boş olanlar'], ['mine', 'Benimkiler']].map (([id, text]) => (
+            {[['all', tx ('Tümü', 'All', 'الكل')], ['free', tx ('Boş olanlar', 'Free', 'المتاحة')], ['mine', tx ('Benimkiler', 'Mine', 'الخاصة بي')]].map (([id, text]) => (
               <FilterChip key={id} type="button" active={filter === id} onClick={() => setFilter (id)}>{text}</FilterChip>
             ))}
           </FilterRow>
@@ -386,7 +389,7 @@ const OzelPage = () => {
       <PartSheet visible={part != null} onClose={() => setPart (null)} busy={busy}
                  mode={part ? part.mode : 'take'} holder={part ? part.name : ''}
                  badge={part ? unit.tile (part.no) : ''} label={part ? unit.label (part.no) : ''}
-                 takeText={unit.kind === 'recite' ? 'Okumayı al' : undefined}
+                 takeText={unit.kind === 'recite' ? tx ('Okumayı al', 'Take this reading', 'خذ هذه القراءة') : undefined}
                  read={part && unit.range ? unit.range (part.no) : undefined}
                  onTake={take} onRename={rename} onRelease={release}
                  extra={part && <>
@@ -395,7 +398,7 @@ const OzelPage = () => {
                    {unit.sub (part.no) && <p style={{textAlign: 'center', color: 'var(--muted)', fontWeight: 700}}>{unit.sub (part.no)}</p>}
                    {part.mode === 'mine' && selectedKhatm &&
                      <SecondaryButton type="button" id="toggleRead" disabled={busy} onClick={toggleRead}>
-                       <Check size={20} /> {isRead (selectedKhatm, part.no) ? `${Language.MyKhatms.ReadDone} · geri al` : Language.MyKhatms.Read}
+                       <Check size={20} /> {isRead (selectedKhatm, part.no) ? `${Language.MyKhatms.ReadDone} · ${tx ('geri al', 'undo', 'تراجع')}` : Language.MyKhatms.Read}
                      </SecondaryButton>}
                  </>} />
 
@@ -407,7 +410,7 @@ const OzelPage = () => {
                     onConfirm={deleteKhatm} onCancel={() => setConfirm (null)} />
 
       <ConfirmSheet visible={confirm === 'add'} icon="add" busy={busy}
-                    title={`Bu sayfaya yeni bir hatim (${unit.slots} ${unit.noun}) eklensin mi?`}
+                    title={tx (`Bu sayfaya yeni bir hatim (${unit.slots} ${unit.noun}) eklensin mi?`, `Add a new khatm (${unit.slots} ${unit.noun}) to this page?`, `هل تُضاف ختمة جديدة (${unit.slots} ${unit.noun}) إلى هذه الصفحة؟`)}
                     onConfirm={addKhatm} onCancel={() => setConfirm (null)} />
 
       <EditSheet visible={editing} onClose={() => setEditing (false)} withDate

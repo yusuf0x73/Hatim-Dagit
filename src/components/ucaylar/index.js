@@ -5,8 +5,9 @@ import {X, HandClick, CalendarEvent, Check, Printer} from 'tabler-icons-react';
 import {showNotification} from '@mantine/notifications';
 import {DatabaseContext} from 'backend';
 import {extractKey} from 'common';
-import {PLANS, MONTH_GENITIVE, buildSchedule, isRotating, todayIndex, periodEndDate, formatDate, toDate} from 'plans';
-import {SURAHS, juzRange} from 'plans/quran';
+import {PLANS, monthDayLabel, buildSchedule, isRotating, todayIndex, periodEndDate, formatDate, toDate} from 'plans';
+import {SURAHS, juzRange, juzLabel, ayahsLabel, pageLabel} from 'plans/quran';
+import {tx, LOCALE} from 'strings/tx';
 import {listKhatms, rememberPart, forgetPart, getTicks} from 'localStorage/myKhatms';
 import LanguageData from 'strings';
 import {ShareActions, ChartSheet, chartStore, useLiveKhatm, KhatmStatus, hasSecret, failMessage, takeFailMessage, isLocalAdmin, ReactionChips, ReactionPicker, ReadQuranBanner} from 'components/khatmKit';
@@ -23,9 +24,7 @@ import {
 const normalize = text =>
   text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[̀-ͯ']/g, '').replace(/ı/g, 'i');
 
-const PLURAL_ACC = {parça: 'parçaları', sayfa: 'sayfaları', 'sûre': 'sûreleri'};
-
-const formatLong = date => date.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'});
+const formatLong = date => date.toLocaleDateString(LOCALE, {day: 'numeric', month: 'long', year: 'numeric'});
 
 // Firebase 1..N anahtarlarını diziye çevirebilir; her durumda {no: part} haritası üret
 const normalizeParts = parts => {
@@ -135,7 +134,7 @@ const UcAylar = () => {
 
   const takeSelected = async () => {
     if (!name.trim()) {
-      setActionError('Lütfen isminizi yazın.');
+      setActionError(tx('Lütfen isminizi yazın.', 'Please write your name.', 'يرجى كتابة اسمك.'));
       return;
     }
     setBusy(true);
@@ -164,7 +163,7 @@ const UcAylar = () => {
       setMineVersion(v => v + 1);
       setSelected(null);
     } else {
-      setActionError(failMessage(result && result.code, 'Bırakılamadı. Lütfen tekrar deneyin.'));
+      setActionError(failMessage(result && result.code, tx('Bırakılamadı. Lütfen tekrar deneyin.', 'Could not release it. Please try again.', 'تعذّر الترك. يرجى المحاولة مرة أخرى.')));
     }
     setBusy(false);
   };
@@ -172,7 +171,7 @@ const UcAylar = () => {
   // İsim değiştirme; cihazda kaydı olmayan ama secret'ı tutan parça da "Benimkiler"e geri gelir
   const renameSelected = async () => {
     if (!name.trim()) {
-      setActionError('Lütfen isminizi yazın.');
+      setActionError(tx('Lütfen isminizi yazın.', 'Please write your name.', 'يرجى كتابة اسمك.'));
       return;
     }
     setBusy(true);
@@ -189,7 +188,7 @@ const UcAylar = () => {
       setMineVersion(v => v + 1);
       setSelected(null);
     } else {
-      setActionError(failMessage(result && result.code, 'Kaydedilemedi. Lütfen tekrar deneyin.'));
+      setActionError(failMessage(result && result.code, tx('Kaydedilemedi. Lütfen tekrar deneyin.', 'Could not save. Please try again.', 'تعذّر الحفظ. يرجى المحاولة مرة أخرى.')));
     }
     setBusy(false);
   };
@@ -233,7 +232,7 @@ const UcAylar = () => {
             data-part={no} onClick={() => openSlot(no)}>
         {isMine(no) && <MineTag>{LanguageData.CuzGrid.Mine}</MineTag>}
         <strong>{label}</strong>
-        <span>{part.isTaken ? part.name || '—' : 'Boş'}</span>
+        <span>{part.isTaken ? part.name || '—' : tx('Boş', 'Free', 'متاح')}</span>
         {part.isTaken && <ReactionChips charts={khatm.charts} no={no} />}
       </Tile>
     );
@@ -245,7 +244,7 @@ const UcAylar = () => {
       .filter(group => group.visible.length > 0)
       .filter(group => searchNumber == null || khatm.plan === 'samePage' || group.juz === searchNumber);
 
-    if (groups.length === 0) return <Empty>Gösterilecek {plan.unit} yok.</Empty>;
+    if (groups.length === 0) return <Empty>{tx(`Gösterilecek ${plan.unit} yok.`, `No ${plan.unitsAcc} to show.`, `لا توجد ${plan.units} لعرضها.`)}</Empty>;
 
     const collapsible = khatm.plan === 'samePage';
     return (
@@ -261,8 +260,8 @@ const UcAylar = () => {
                 <GroupNo>{group.juz}</GroupNo>
                 <GroupInfo>
                   <GroupTitle>
-                    <span>{group.juz}. cüz</span>
-                    <small>{start}–{end} · {free} boş</small>
+                    <span>{juzLabel(group.juz)}</span>
+                    <small>{start}–{end} · {tx(`${free} boş`, `${free} free`, `${free} متاح`)}</small>
                   </GroupTitle>
                   {collapsible && <MiniBar aria-hidden='true'>
                     {group.slots.map(no => <i key={no} className={isMine(no) ? 'mine' : isTaken(no) ? 'taken' : ''} />)}
@@ -281,8 +280,9 @@ const UcAylar = () => {
 
   const renderSurahs = () => {
     const rows = SURAHS.filter(surah => passesFilter(surah.number)).filter(surah =>
-      !searchTerm || (searchNumber != null ? surah.number === searchNumber : normalize(surah.name).includes(normalize(searchTerm))));
-    if (rows.length === 0) return <Empty>Gösterilecek sûre yok.</Empty>;
+      !searchTerm || (searchNumber != null ? surah.number === searchNumber
+        : normalize(surah.name).includes(normalize(searchTerm)) || normalize(surah.trName).includes(normalize(searchTerm))));
+    if (rows.length === 0) return <Empty>{tx('Gösterilecek sûre yok.', 'No surahs to show.', 'لا توجد سور لعرضها.')}</Empty>;
     return (
       <ListCard>
         {rows.map(surah => {
@@ -292,10 +292,10 @@ const UcAylar = () => {
               <GroupNo>{surah.number}</GroupNo>
               <GroupInfo>
                 <strong>{surah.name}{isMine(surah.number) && <MineTag inline>{LanguageData.CuzGrid.Mine}</MineTag>}</strong>
-                <small style={{color: 'var(--muted)', fontWeight: 700}}>{surah.ayahs} âyet · {surah.page}. sayfa</small>
+                <small style={{color: 'var(--muted)', fontWeight: 700}}>{ayahsLabel(surah.ayahs)} · {pageLabel(surah.page)}</small>
               </GroupInfo>
               <RowStatus taken={part.isTaken}>
-                {part.isTaken ? part.name || 'Alındı' : 'Boş'}
+                {part.isTaken ? part.name || tx('Alındı', 'Taken', 'مأخوذ') : tx('Boş', 'Free', 'متاح')}
                 {part.isTaken && <ReactionChips charts={khatm.charts} no={surah.number} />}
               </RowStatus>
             </Row>
@@ -318,13 +318,13 @@ const UcAylar = () => {
       <Wrap>
         <HeroCard>
           <HeroHead>
-            <PlanChip>{plan.title}{plan.rotatingText ? ` · ${rotating ? 'Dönerli' : 'Sabit'}` : ''}</PlanChip>
-            <HeroTitle>{khatm.header || '3 Aylar Hatmi'}</HeroTitle>
+            <PlanChip>{plan.title}{plan.rotatingText ? ` · ${rotating ? tx('Dönerli', 'Rotating', 'دوّارة') : tx('Sabit', 'Fixed', 'ثابتة')}` : ''}</PlanChip>
+            <HeroTitle>{khatm.header || tx('3 Aylar Hatmi', 'Three Months Khatm', 'ختمة الأشهر الثلاثة')}</HeroTitle>
             {khatm.description && <HeroText>{khatm.description}</HeroText>}
           </HeroHead>
           <HeroBody>
             <StatRow>
-              <StatLabel>Alınan {plan.unit}: {takenCount} / {plan.slots}</StatLabel>
+              <StatLabel>{tx(`Alınan ${plan.unit}`, `${plan.units} taken`, `${plan.units} المأخوذة`)}: {takenCount} / {plan.slots}</StatLabel>
               <StatValue>%{percent}</StatValue>
             </StatRow>
             <Bar><span style={{width: `${percent}%`}} /></Bar>
@@ -332,13 +332,16 @@ const UcAylar = () => {
               <Badge>{formatLong(toDate(period.startingDate))} – {formatLong(periodEndDate(period))}</Badge>
               <Badge gold>
                 {dayIndex != null
-                  ? `Bugün ${MONTH_GENITIVE[buildSchedule(khatm.plan, 1, period)[dayIndex].monthIndex]} ${buildSchedule(khatm.plan, 1, period)[dayIndex].dayInMonth}. günü`
-                  : ended ? 'Üç aylar tamamlandı' : `Üç aylara ${daysToStart} gün var`}
+                  ? tx('Bugün ', 'Today is ', 'اليوم هو ') + monthDayLabel(buildSchedule(khatm.plan, 1, period)[dayIndex].monthIndex, buildSchedule(khatm.plan, 1, period)[dayIndex].dayInMonth)
+                  : ended ? tx('Üç aylar tamamlandı', 'The three months are over', 'انتهت الأشهر الثلاثة')
+                  : tx(`Üç aylara ${daysToStart} gün var`, `${daysToStart} days until the three months`, `${daysToStart} يومًا حتى الأشهر الثلاثة`)}
               </Badge>
             </Badges>
             {mySlots.length > 0 &&
               <MineLine id="mineLine">
-                <span>{mySlots.length > 1 ? `Şu ${PLURAL_ACC[plan.unit] || 'parçaları'} aldınız:` : `Şu ${plan.unitAcc || 'parçayı'} aldınız:`}</span>
+                <span>{mySlots.length > 1
+                  ? tx(`Şu ${plan.unitsAcc} aldınız:`, `You took these ${plan.unitsAcc}:`, `أخذتَ هذه ${plan.unitsAcc}:`)
+                  : tx(`Şu ${plan.unitAcc} aldınız:`, `You took this ${plan.unitAcc}:`, `أخذتَ هذا ${plan.unitAcc}:`)}</span>
                 {mySlots.map(no => (
                   <button key={no} type="button" onClick={() => {
                     const card = document.querySelector(`[data-mine="${no}"]`);
@@ -347,13 +350,13 @@ const UcAylar = () => {
                 ))}
               </MineLine>}
             <GhostButton id="printButton" style={{marginTop: 14}} onClick={() => setPrinting(true)}>
-              <Printer size={20} /> Çizelgeleri yazdır (Recep, Şaban, Ramazan)
+              <Printer size={20} /> {tx('Çizelgeleri yazdır (Recep, Şaban, Ramazan)', "Print the charts (Rajab, Sha'ban, Ramadan)", 'اطبع الجداول (رجب، شعبان، رمضان)')}
             </GhostButton>
           </HeroBody>
         </HeroCard>
 
         {mySlots.length > 0 && <>
-          <SectionTitle>{dayIndex != null ? 'Bugün okuyacaklarım' : 'Aldıklarım'}</SectionTitle>
+          <SectionTitle>{dayIndex != null ? tx('Bugün okuyacaklarım', 'My reading today', 'قراءتي اليوم') : tx('Aldıklarım', 'What I took', 'ما أخذته')}</SectionTitle>
           {mySlots.map(no => {
             const today = reading(no);
             const days = doneDays(no);
@@ -361,15 +364,15 @@ const UcAylar = () => {
             return (
               <TodayCard key={no} done={done} data-mine={no} style={{cursor: 'pointer'}} onClick={() => setChartSlot(no)}>
                 <TodayBody>
-                  <TodayKicker>{!rotating ? 'Her gün' : `Aldığınız: ${plan.slotLabel(no).title}`}</TodayKicker>
+                  <TodayKicker>{!rotating ? tx('Her gün', 'Every day', 'كل يوم') : `${tx('Aldığınız', 'You took', 'أخذتَ')}: ${plan.slotLabel(no).title}`}</TodayKicker>
                   <TodayTitle>{today.title}</TodayTitle>
-                  <TodaySub>{dayIndex != null ? today.subtitle : `İlk gün (${formatDate(today.date)}): ${today.subtitle}`}</TodaySub>
+                  <TodaySub>{dayIndex != null ? today.subtitle : `${tx('İlk gün', 'First day', 'اليوم الأول')} (${formatDate(today.date)}): ${today.subtitle}`}</TodaySub>
                 </TodayBody>
                 {dayIndex != null &&
                   <SmallButton filled={done} onClick={event => { event.stopPropagation(); markDay(no, dayIndex, !done); }}>
-                    <Check size={18} /> {done ? 'Okundu' : 'Okudum'}
+                    <Check size={18} /> {done ? tx('Okundu', 'Read', 'قُرئ') : tx('Okudum', 'I read it', 'قرأت')}
                   </SmallButton>}
-                <SmallButton aria-label='Çizelge' onClick={event => { event.stopPropagation(); setChartSlot(no); }}>
+                <SmallButton aria-label={tx('Çizelge', 'Chart', 'الجدول')} onClick={event => { event.stopPropagation(); setChartSlot(no); }}>
                   <CalendarEvent size={18} />
                 </SmallButton>
               </TodayCard>
@@ -377,15 +380,16 @@ const UcAylar = () => {
           })}
         </>}
 
-        <SectionTitle>{plan.unit === 'sûre' ? 'Sûreler' : plan.unit === 'sayfa' ? 'Sayfalar' : 'Parçalar'}</SectionTitle>
+        <SectionTitle>{plan.units}</SectionTitle>
 
         <Toolbar>
           {takenCount < plan.slots &&
-            <LuckyButton id="nextFree" onClick={pickNextFree}><HandClick size={22} /> Sıradaki boş {plan.unitAcc} bana verin</LuckyButton>}
+            <LuckyButton id="nextFree" onClick={pickNextFree}><HandClick size={22} /> {tx(`Sıradaki boş ${plan.unitAcc} bana verin`, `Give me the next free ${plan.unitAcc}`, `أعطني ${plan.unitAcc} المتاح التالي`)}</LuckyButton>}
           <SearchInput
             value={query}
             inputMode={khatm.plan === 'sameSurah' ? 'text' : 'numeric'}
-            placeholder={khatm.plan === 'sameSurah' ? 'Sûre ara (ör. Yâsîn, 67)' : khatm.plan === 'samePage' ? 'Sayfa numarası (1–604)' : 'Cüz numarası (1–30)'}
+            placeholder={khatm.plan === 'sameSurah' ? tx('Sûre ara (ör. Yâsîn, 67)', 'Search surahs (e.g. Ya-Sin, 67)', 'ابحث عن سورة (مثل يس، 67)')
+              : khatm.plan === 'samePage' ? tx('Sayfa numarası (1–604)', 'Page number (1–604)', 'رقم الصفحة (1–604)') : tx('Cüz numarası (1–30)', 'Juz number (1–30)', 'رقم الجزء (1–30)')}
             onChange={event => {
               setQuery(event.target.value);
               const n = Number(event.target.value);
@@ -393,7 +397,7 @@ const UcAylar = () => {
             }}
           />
           <FilterRow>
-            {[['all', 'Tümü'], ['free', 'Boş olanlar'], ['mine', 'Benimkiler']].map(([id, text]) => (
+            {[['all', tx('Tümü', 'All', 'الكل')], ['free', tx('Boş olanlar', 'Free', 'المتاحة')], ['mine', tx('Benimkiler', 'Mine', 'الخاصة بي')]].map(([id, text]) => (
               <FilterChip key={id} active={filter === id} onClick={() => setFilter(id)}>{text}</FilterChip>
             ))}
           </FilterRow>
@@ -404,40 +408,40 @@ const UcAylar = () => {
 
       {/* Parça alma / bırakma */}
       {selected && <Sheet role='dialog' aria-modal='true'>
-        <SheetClose aria-label='Kapat' onClick={() => setSelected(null)}><X size={22} /></SheetClose>
+        <SheetClose aria-label={tx('Kapat', 'Close', 'إغلاق')} onClick={() => setSelected(null)}><X size={22} /></SheetClose>
         <SheetTitle>{selectedLabel.title}</SheetTitle>
         <SheetSub>{selectedLabel.subtitle}</SheetSub>
 
         {isMine(selected) ? <>
-          <InfoBox>Bu {plan.unit} sizde. Bugünkü okumanız: <b>{reading(selected).title}</b> ({reading(selected).subtitle})</InfoBox>
+          <InfoBox>{tx(`Bu ${plan.unit} sizde. Bugünkü okumanız:`, `This ${plan.unit} is yours. Today's reading:`, `هذا القسم لك. قراءتك اليوم:`)} <b>{reading(selected).title}</b> ({reading(selected).subtitle})</InfoBox>
           <ActionButton onClick={() => { setChartSlot(selected); setSelected(null); }}>
-            <CalendarEvent size={20} /> Çizelgeyi aç
+            <CalendarEvent size={20} /> {tx('Çizelgeyi aç', 'Open the chart', 'افتح الجدول')}
           </ActionButton>
           <NameInput id="partName" value={name} placeholder={LanguageData['/cuz'].CuzlerHatimCard.PartModal.Name}
                      onChange={event => setName(event.target.value)} />
           <GhostButton id="renameButton" disabled={busy} onClick={renameSelected}>{LanguageData.Kit.RenameButton}</GhostButton>
-          <GhostButton danger id="releaseButton" disabled={busy} onClick={releaseSelected}>{busy ? 'Lütfen bekleyin…' : 'Bırak'}</GhostButton>
+          <GhostButton danger id="releaseButton" disabled={busy} onClick={releaseSelected}>{busy ? tx('Lütfen bekleyin…', 'Please wait…', 'يرجى الانتظار…') : 'Bırak'}</GhostButton>
         </> : selectedPart.isTaken ? <>
-          <InfoBox><b>{selectedPart.name || 'Bir kardeşimiz'}</b> bu {plan.unitAcc} aldı. Boş bir {plan.unit} seçebilirsiniz.</InfoBox>
+          <InfoBox><b>{selectedPart.name || tx('Bir kardeşimiz', 'Someone', 'أحد الإخوة')}</b> {tx(`bu ${plan.unitAcc} aldı. Boş bir ${plan.unit} seçebilirsiniz.`, `took this ${plan.unitAcc}. You can choose a free ${plan.unit}.`, `أخذ ${plan.unitAcc}. يمكنك اختيار ${plan.unit} متاح.`)}</InfoBox>
           <ActionButton id="otherChart" onClick={() => { setChartSlot(selected); setSelected(null); }}>
             <CalendarEvent size={20} /> {LanguageData.Kit.ShowChart}
           </ActionButton>
-          <GhostButton onClick={() => { setSelected(null); pickNextFree(); }}><HandClick size={20} /> Sıradaki boş {plan.unitAcc} bana verin</GhostButton>
+          <GhostButton onClick={() => { setSelected(null); pickNextFree(); }}><HandClick size={20} /> {tx(`Sıradaki boş ${plan.unitAcc} bana verin`, `Give me the next free ${plan.unitAcc}`, `أعطني ${plan.unitAcc} المتاح التالي`)}</GhostButton>
           {canClaim && <>
             {!isAdmin && <InfoBox>{LanguageData.Kit.OtherHint}</InfoBox>}
             <NameInput id="partName" value={name} placeholder={LanguageData['/cuz'].CuzlerHatimCard.PartModal.Name}
                        onChange={event => setName(event.target.value)} />
             <GhostButton id="renameButton" disabled={busy} onClick={renameSelected}>{LanguageData.Kit.RenameButton}</GhostButton>
-            <GhostButton danger id="releaseButton" disabled={busy} onClick={releaseSelected}>{busy ? 'Lütfen bekleyin…' : 'Bırak'}</GhostButton>
+            <GhostButton danger id="releaseButton" disabled={busy} onClick={releaseSelected}>{busy ? tx('Lütfen bekleyin…', 'Please wait…', 'يرجى الانتظار…') : 'Bırak'}</GhostButton>
           </>}
         </> : <>
           <InfoBox>
-            {(rotating ? plan.rotatingText : plan.fixedText) || `Üç ay boyunca her gün bu ${plan.unitAcc} okuyacaksınız.`}
-            {rotating && ' Gün gün ne okuyacağınızı çizelgede görebilirsiniz.'}
+            {(rotating ? plan.rotatingText : plan.fixedText) || tx(`Üç ay boyunca her gün bu ${plan.unitAcc} okuyacaksınız.`, `You will read this ${plan.unitAcc} every day for three months.`, `ستقرأ ${plan.unitAcc} كل يوم لمدة ثلاثة أشهر.`)}
+            {rotating && tx(' Gün gün ne okuyacağınızı çizelgede görebilirsiniz.', ' You can see what to read each day in the chart.', ' يمكنك رؤية ما تقرؤه كل يوم في الجدول.')}
           </InfoBox>
           <NameInput id="partName" value={name} placeholder={LanguageData['/cuz'].CuzlerHatimCard.PartModal.Name}
                      onChange={event => setName(event.target.value)} autoFocus />
-          <ActionButton id="takeButton" disabled={busy} onClick={takeSelected}>{busy ? 'Lütfen bekleyin…' : plan.takeText}</ActionButton>
+          <ActionButton id="takeButton" disabled={busy} onClick={takeSelected}>{busy ? tx('Lütfen bekleyin…', 'Please wait…', 'يرجى الانتظار…') : plan.takeText}</ActionButton>
         </>}
 
         {selectedPart.isTaken && <ReactionPicker hatimKey={key} subKey={khatm.subKey} no={selected} charts={khatm.charts} />}
@@ -448,7 +452,7 @@ const UcAylar = () => {
       <ChartSheet visible={chartSlot != null} onClose={() => { setChartSlot(null); setMineVersion(v => v + 1); }}
                   title={chartSlot != null ? plan.slotLabel(chartSlot).title : ''}
                   subtitle={chartSlot != null && !isMine(chartSlot) && isTaken(chartSlot)
-                    ? `${parts[chartSlot].name || 'Bir kardeşimiz'} · ${plan.title}` : plan.title}
+                    ? `${parts[chartSlot].name || tx('Bir kardeşimiz', 'Someone', 'أحد الإخوة')} · ${plan.title}` : plan.title}
                   days={chartDays}
                   canEdit={chartSlot != null && isMine(chartSlot)}
                   reactions={chartSlot != null && isTaken(chartSlot) &&

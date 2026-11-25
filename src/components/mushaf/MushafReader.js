@@ -9,7 +9,8 @@
 
 import React, {useEffect, useLayoutEffect, useMemo, useRef, useState, memo} from 'react';
 import {useHistory, useLocation} from 'react-router-dom';
-import {SURAHS, TOTAL_PAGES, juzRange, juzOfPage} from 'plans/quran';
+import {SURAHS, TOTAL_PAGES, juzRange, juzOfPage, juzLabel, pageLabel, quarterLabel} from 'plans/quran';
+import {tx} from 'strings/tx';
 import Curl from './curl';
 import {loadMushaf, pageHTML, headerHTML, fit, AR, PDF_PAGE} from './text';
 import './mushaf.css';
@@ -560,7 +561,8 @@ const MushafReader = () => {
   // İlk açılışta bir kez: nasıl çevrileceğini söyle
   useEffect (() => {
     if (!m || !hint) return;
-    setToast ({t: 'Sayfayı kenarından tutup çekin ya da alttaki Önceki / Sonraki düğmelerine dokunun', long: true});
+    setToast ({t: tx ('Sayfayı kenarından tutup çekin ya da alttaki Önceki / Sonraki düğmelerine dokunun', 'Drag the page by its edge, or tap Previous / Next below',
+                      'اسحب الصفحة من طرفها، أو اضغط السابق / التالي في الأسفل'), long: true});
     setHint (false);
   }, [m]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect (() => {
@@ -573,7 +575,7 @@ const MushafReader = () => {
   useEffect (() => {
     if (range && page === range.end && !ended.current) {
       ended.current = true;
-      setToast ({t: 'Parçanızın son sayfasındasınız. Allah kabul etsin 🤲'});
+      setToast ({t: tx ('Parçanızın son sayfasındasınız. Allah kabul etsin 🤲', 'This is the last page of your part. May Allah accept it 🤲', 'هذه آخر صفحة من قسمك. تقبّل الله 🤲')});
     }
   }, [page, range]);
 
@@ -598,53 +600,57 @@ const MushafReader = () => {
     <div ref={rootEl} className={`mr${color ? ' colored' : ''}${immersive ? ' immersive' : ''}`} data-theme={theme}>
       <div className="top">
         <div className="brand">
-          <button type="button" className="back" aria-label="Geri" onClick={back}>
+          <button type="button" className="back" aria-label={tx ('Geri', 'Back', 'رجوع')} onClick={back}>
             <Icon width="18" height="18" d={<path d="m15 18-6-6 6-6" />} />
           </button>
           <span className="where">
             <b>{SURAHS[s - 1].name}</b>
-            <small>{juz}. cüz · {page}. sayfa</small>
+            <small>{juzLabel (juz)} · {pageLabel (page)}</small>
           </span>
-          {range && <span className="range">Parçanız: {range.start === range.end ? range.start : `${range.start}–${range.end}`}. sayfa</span>}
+          {range && <span className="range">{tx ('Parçanız', 'Your part', 'قسمك')}: {range.start === range.end ? pageLabel (range.start)
+            : tx (`${range.start}–${range.end}. sayfa`, `pages ${range.start}–${range.end}`, `الصفحات ${range.start}–${range.end}`)}</span>}
         </div>
         <div className="seg">
           <button type="button" className={source === 'text' ? 'on' : ''} onClick={() => setSource ('text')}>Hamdullah</button>
           <button type="button" className={source === 'pdf' ? 'on' : ''} onClick={() => setSource ('pdf')}>PDF</button>
         </div>
         <div className="seg">
-          <button type="button" className={mode === 'page' ? 'on' : ''} onClick={() => setMode ('page')}>Sayfa</button>
-          <button type="button" className={mode === 'scroll' ? 'on' : ''} onClick={() => { setMode ('scroll'); setJump (j => j + 1); }}>Akış</button>
+          <button type="button" className={mode === 'page' ? 'on' : ''} onClick={() => setMode ('page')}>{tx ('Sayfa', 'Page', 'صفحة')}</button>
+          <button type="button" className={mode === 'scroll' ? 'on' : ''} onClick={() => { setMode ('scroll'); setJump (j => j + 1); }}>{tx ('Akış', 'Scroll', 'تمرير')}</button>
         </div>
-        <button type="button" className={`iconbtn${color ? ' on' : ''}`} title="Lafza-i Celal, durak ve medd işaretlerini renklendir" onClick={() => setColor (!color)}>
+        <button type="button" className={`iconbtn${color ? ' on' : ''}`} title={tx ('Lafza-i Celal, durak ve medd işaretlerini renklendir', 'Colour the Name of Allah, stop and madd marks', 'تلوين لفظ الجلالة وعلامات الوقف والمد')} onClick={() => setColor (!color)}>
           <Icon d={<><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5c0-4-4-7.2-9-7.2Z" /><circle cx="7.5" cy="11" r="1" /><circle cx="10.5" cy="7.5" r="1" /><circle cx="15" cy="7.5" r="1" /></>} />
         </button>
-        <button type="button" className={`iconbtn${theme === 'dark' ? ' on' : ''}`} title="Gece modu" onClick={() => setTheme (theme === 'dark' ? 'light' : 'dark')}>
+        <button type="button" className={`iconbtn${theme === 'dark' ? ' on' : ''}`} title={tx ('Gece modu', 'Night mode', 'الوضع الليلي')} onClick={() => setTheme (theme === 'dark' ? 'light' : 'dark')}>
           <Icon d={<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />} />
         </button>
-        <button type="button" className="iconbtn" title="Çevirme yönü"
-                onClick={() => { setRtl (!rtl); setToast ({t: !rtl ? 'Mushaf yönü: soldan tut, sağa çevir' : 'Kitap yönü: sağdan tut, sola çevir'}); }}>
+        <button type="button" className="iconbtn" title={tx ('Çevirme yönü', 'Page-turn direction', 'اتجاه التقليب')}
+                onClick={() => { setRtl (!rtl); setToast ({t: !rtl ? tx ('Mushaf yönü: soldan tut, sağa çevir', 'Mushaf direction: hold the left edge, turn to the right', 'اتجاه المصحف: أمسك من اليسار واقلب إلى اليمين')
+                                                     : tx ('Kitap yönü: sağdan tut, sola çevir', 'Book direction: hold the right edge, turn to the left', 'اتجاه الكتاب: أمسك من اليمين واقلب إلى اليسار')}); }}>
           <Icon d={rtl ? <><path d="M4 12h14" /><path d="m13 6 6 6-6 6" /></> : <><path d="M20 12H6" /><path d="m11 6-6 6 6 6" /></>} />
         </button>
         {/* Akışta yazı boyutu; sayfa modunda yakınlaştırma (iki parmak / çift dokunuş da olur) */}
-        <button type="button" className="iconbtn" title="Küçült"
+        <button type="button" className="iconbtn" title={tx ('Küçült', 'Smaller', 'تصغير')}
                 onClick={() => (mode === 'scroll' ? setFs (f => Math.max (18, f - 2)) : zoomApi.current && zoomApi.current.step (1 / 1.25))}>A−</button>
-        <button type="button" className="iconbtn" title="Büyüt"
+        <button type="button" className="iconbtn" title={tx ('Büyüt', 'Larger', 'تكبير')}
                 onClick={() => (mode === 'scroll' ? setFs (f => Math.min (64, f + 2)) : zoomApi.current && zoomApi.current.step (1.25))}>A+</button>
       </div>
 
       {notice &&
         <div className="notice">
           <div>
-            <b>Kaynak:</b> Mushaf metni ve PDF sayfaları T.C. Diyanet İşleri Başkanlığı Kur'an-ı Kerim yayınlarından alınmıştır.
-            Bilgi için <a href={DIYANET} target="_blank" rel="noopener noreferrer">kuran.diyanet.gov.tr/yayinlarimiz</a>
+            <b>{tx ('Kaynak', 'Source', 'المصدر')}:</b> {tx ("Mushaf metni ve PDF sayfaları T.C. Diyanet İşleri Başkanlığı Kur'an-ı Kerim yayınlarından alınmıştır.",
+              "The mushaf text and PDF pages are taken from the Qur'an publications of the Presidency of Religious Affairs of Türkiye (Diyanet).",
+              'نص المصحف وصفحات PDF مأخوذة من إصدارات القرآن الكريم لرئاسة الشؤون الدينية التركية (ديانت).')}
+            {' '}{tx ('Bilgi için', 'More information:', 'للمزيد:')} <a href={DIYANET} target="_blank" rel="noopener noreferrer">kuran.diyanet.gov.tr/yayinlarimiz</a>
           </div>
-          <button type="button" aria-label="Kapat" onClick={() => setNotice (false)}>×</button>
+          <button type="button" aria-label={tx ('Kapat', 'Close', 'إغلاق')} onClick={() => setNotice (false)}>×</button>
         </div>}
 
       {!m
         ? <div className="loader">
             {failed
-              ? <><div>Mushaf yüklenemedi.</div><button type="button" className="iconbtn" onClick={() => { setFailed (false); loadMushaf ().then (setM, () => setFailed (true)); }}>Tekrar dene</button></>
+              ? <><div>{tx ('Mushaf yüklenemedi.', 'The mushaf could not be loaded.', 'تعذّر تحميل المصحف.')}</div><button type="button" className="iconbtn" onClick={() => { setFailed (false); loadMushaf ().then (setM, () => setFailed (true)); }}>{tx ('Tekrar dene', 'Try again', 'أعد المحاولة')}</button></>
               : <span>﷽</span>}
           </div>
         : mode === 'page'
@@ -654,27 +660,27 @@ const MushafReader = () => {
             </div>}
 
       <div className="bottom">
-        <select title="Cüz" value={juz} onChange={e => goto (juzRange (+e.target.value).start)}>
-          {Array.from ({length: 30}, (_, i) => <option key={i} value={i + 1}>{i + 1}. Cüz</option>)}
+        <select title={tx ('Cüz', 'Juz', 'الجزء')} value={juz} onChange={e => goto (juzRange (+e.target.value).start)}>
+          {Array.from ({length: 30}, (_, i) => <option key={i} value={i + 1}>{juzLabel (i + 1)}</option>)}
         </select>
-        <select title="Hizb" className="hide-sm" value={hizb} onChange={e => goto (hizbStart (juz, +e.target.value))}>
-          {[1, 2, 3, 4].map (i => <option key={i} value={i}>{i}. hizb · s.{hizbStart (juz, i)}</option>)}
+        <select title={tx ('Hizb', 'Quarter', 'الربع')} className="hide-sm" value={hizb} onChange={e => goto (hizbStart (juz, +e.target.value))}>
+          {[1, 2, 3, 4].map (i => <option key={i} value={i}>{tx (`${i}. hizb`, quarterLabel (i), quarterLabel (i))} · {tx ('s.', 'p.', 'ص')}{hizbStart (juz, i)}</option>)}
         </select>
-        <select title="Sûre" className="hide-sm" value={s} onChange={e => goto (surahStart (+e.target.value))}>
+        <select title={tx ('Sûre', 'Surah', 'السورة')} className="hide-sm" value={s} onChange={e => goto (surahStart (+e.target.value))}>
           {SURAHS.map (x => <option key={x.number} value={x.number}>{x.number}. {x.name}</option>)}
         </select>
         {/* Kaydırmayı bilmeyenler için: mushaf yönünde Sonraki solda, Önceki sağda */}
         <div className="pager" style={{flexDirection: rtl ? 'row' : 'row-reverse'}}>
           <button type="button" className="turn" onClick={() => flipApi.current && flipApi.current (1)}>
-            <Icon width="18" height="18" d={<path d={rtl ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />} /> Sonraki
+            <Icon width="18" height="18" d={<path d={rtl ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />} /> {tx ('Sonraki', 'Next', 'التالي')}
           </button>
-          <input className="pageinput" inputMode="numeric" key={page} defaultValue={page} aria-label="Sayfa"
+          <input className="pageinput" inputMode="numeric" key={page} defaultValue={page} aria-label={tx ('Sayfa', 'Page', 'الصفحة')}
                  onKeyDown={e => e.key === 'Enter' && goto (+e.target.value)} onBlur={e => goto (+e.target.value)} />
           <button type="button" className="turn" onClick={() => flipApi.current && flipApi.current (-1)}>
-            Önceki <Icon width="18" height="18" d={<path d={rtl ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'} />} />
+            {tx ('Önceki', 'Previous', 'السابق')} <Icon width="18" height="18" d={<path d={rtl ? 'm9 18 6-6-6-6' : 'm15 18-6-6 6-6'} />} />
           </button>
         </div>
-        <div className="status hide-sm"><b>{SURAHS[s - 1].name}</b> · {juz}. cüz · {page}/{N}</div>
+        <div className="status hide-sm"><b>{SURAHS[s - 1].name}</b> · {juzLabel (juz)} · {page}/{N}</div>
       </div>
 
       <div className={`toast${toast ? ' show' : ''}`}>{toast && toast.t}{toast && toast.ar && <span className="ar">{toast.ar}</span>}</div>

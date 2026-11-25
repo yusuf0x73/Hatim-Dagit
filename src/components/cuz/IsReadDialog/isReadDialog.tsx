@@ -13,6 +13,8 @@ import { isReadDialogAlertActions, isReadDialogAlertFunctions, useIsReadDialogAl
 import { useDispatch } from 'react-redux';
 import { cuzlerFunctionTriggerActions } from 'features/cuzlerFunctionTrigger';
 import { AppDispatch } from 'redux/store';
+// @ts-ignore
+import {tx} from 'strings/tx';
 
 const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatimlerVisibilities: any, toggleHatimlerVisibilities: any}) => {
   const {visible, subKey, partNo, isRead} = useIsReadDialogAlert ();
@@ -23,7 +25,7 @@ const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatiml
       <YesNoContainer>
         <YesNoLayout>
 
-          <YesNoText>{'Cüzü okudunuz mu?'}</YesNoText>
+          <YesNoText>{tx('Cüzü okudunuz mu?', 'Did you read the juz?', 'هل قرأت الجزء؟')}</YesNoText>
 
           <YesNoButtonContainer>
             <YesNoButtonLayout>
@@ -34,10 +36,10 @@ const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatiml
                 onClick={() => {
                   dispatch(isReadDialogAlertFunctions.partRead({subKey, partNo}))
                   dispatch(cuzlerFunctionTriggerActions.toggleVisibility())
-                  alert ('Allah kabul etsin.');
+                  alert (tx('Allah kabul etsin.', 'May Allah accept it.', 'تقبّل الله.'));
                 }}
               >
-                {'Evet'}
+                {tx('Evet', 'Yes', 'نعم')}
               </Button>
               <Button
                 fullWidth
@@ -52,7 +54,7 @@ const isReadDialog = ({hatimlerVisibilities, toggleHatimlerVisibilities}:{hatiml
                   }
                 }}
               >
-                {'Hayır'}
+                {tx('Hayır', 'No', 'لا')}
               </Button>
 
             </YesNoButtonLayout>

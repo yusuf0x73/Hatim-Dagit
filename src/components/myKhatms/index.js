@@ -1,5 +1,7 @@
 //                                     BİSMİLLAHİRRAHMANİRRAHİM
 
+import {juzLabel} from 'plans/quran';
+import {tx} from 'strings/tx';
 import React, {useMemo, useState} from 'react';
 import {Book, CalendarEvent, Check, Copy, ExternalLink, Trash, Plus} from 'tabler-icons-react';
 import Language from 'strings';
@@ -13,6 +15,8 @@ import {
   Container, Header, HeaderTitle, HeaderText, Content, SectionLabel, Tabs, Tab, Card, CardTop, TypeChip, CardTitle,
   Chips, Chip, CardActions, CardButton, IconButton, Empty, EmptyText, Note,
 } from './styles';
+// Eski kayıtlarda etiket Türkçe saklandı ("3. cüz"); arayüz dilinde yeniden yazılır
+const partLabel = part => (part.label && /^\d+\. cüz$/.test(part.label) ? juzLabel (part.label.split('.')[0]) : part.label);
 
 const texts = Language.MyKhatms;
 const SOON_DAYS = 7;
@@ -41,7 +45,7 @@ const PlanChartSheet = ({entry, part, onClose}) => {
     label: `${day.month} ${day.dayInMonth} · ${formatDate(day.date)}`,
   }));
   return <ChartSheet visible onClose={onClose}
-                     title={part.label || PLANS[entry.plan].slotLabel(part.no).title} subtitle={entry.title}
+                     title={partLabel(part) || PLANS[entry.plan].slotLabel(part.no).title} subtitle={entry.title}
                      days={days} canEdit load={() => store.load()} save={(day, value) => store.save(day, value)} />;
 };
 
@@ -67,7 +71,7 @@ export const TodayReadings = ({entries}) => {
               <TodayKicker>{entry.title}</TodayKicker>
               <TodayTitle>{reading.title}</TodayTitle>
               <TodaySub>
-                {index != null ? reading.subtitle : `${daysToStart} gün sonra · ${formatDate(reading.date)}: ${reading.subtitle}`}
+                {index != null ? reading.subtitle : `${tx(`${daysToStart} gün sonra`, `in ${daysToStart} days`, `بعد ${daysToStart} يومًا`)} · ${formatDate(reading.date)}: ${reading.subtitle}`}
               </TodaySub>
             </TodayBody>
             {index != null &&
@@ -154,11 +158,11 @@ const MyKhatms = () => {
                   <Trash size={18} />
                 </IconButton>
               </CardTop>
-              <CardTitle>{entry.title || KHATM_TYPES[entry.type] || 'Hatim'}</CardTitle>
+              <CardTitle>{entry.title || KHATM_TYPES[entry.type] || tx('Hatim', 'Khatm', 'ختمة')}</CardTitle>
 
               {tab === 'taken' && <Chips>
                 {entry.parts.slice(0, 8).map(part => (
-                  <Chip key={`${part.subKey}/${part.no}`}>{part.label || `${part.no}. cüz`}</Chip>
+                  <Chip key={`${part.subKey}/${part.no}`}>{partLabel(part) || juzLabel (part.no)}</Chip>
                 ))}
                 {entry.parts.length > 8 && <Chip muted>+{entry.parts.length - 8}</Chip>}
               </Chips>}

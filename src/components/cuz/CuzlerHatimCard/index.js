@@ -20,6 +20,7 @@ import {useHistory} from 'react-router-dom';
 import {extractKey} from '../../../common';
 import localDb from '@yusuf-yeniceri/easy-storage';
 import Language from '../../../strings';
+import {tx} from 'strings/tx';
 
 const useStyles = createStyles (theme => ({
   card: {
@@ -177,7 +178,7 @@ export default function StatsCard({
       localStorage.getItem ('CuzKeyler')
     );
     if (localStorageCuzKeylerArr == null) {
-      alert ('Hata var!');
+      alert (tx ('Hata var!', 'Something went wrong!', 'حدث خطأ!'));
       return;
     }
     let index = localStorageCuzKeylerArr.findIndex (

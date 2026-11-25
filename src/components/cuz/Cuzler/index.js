@@ -53,7 +53,8 @@ import { alertDialogActions } from '../../../features/alertDialog';
 import { loadingOverlayActions } from 'features/loadingOverlay';
 import { isReadDialogAlertActions } from 'features/isReadDialogAlert';
 import IsReadDialog from '../IsReadDialog/isReadDialog'
-import {juzRange} from 'plans/quran';
+import {juzRange, juzLabel} from 'plans/quran';
+import {tx} from 'strings/tx';
 
 
 
@@ -485,9 +486,9 @@ const Question = ({ toggle }) => {
                             localStorageCuzObj[activeHatimSubKey].push(hatimNo);
                             localStorage.setItem("cuz",JSON.stringify(localStorageCuzObj));
                             rememberPart({key: extractKey(), type: 'cuz', route: `/cuz/${extractKey()}`, title: cuzlerHatimCardTitle,
-                                          subKey: activeHatimSubKey, no: hatimNo, label: `${hatimNo}. cüz`});
+                                          subKey: activeHatimSubKey, no: hatimNo, label: juzLabel(hatimNo)});
                             dispatch (loadingOverlayActions.toggleVisibility ());
-                            setJustTaken({title: takenTitle(`${hatimNo}. cüz`), text: readTracking ? LanguageData.CuzGrid.ReadHint : undefined,
+                            setJustTaken({title: takenTitle(juzLabel(hatimNo)), text: readTracking ? LanguageData.CuzGrid.ReadHint : undefined,
                                       read: juzRange(Number(hatimNo))})
                             // setTotalPartsTaken(database.countNumberOfCuzs(tempAllLanguages))
                         }
@@ -543,7 +544,7 @@ const Question = ({ toggle }) => {
             localStorageCuzObj[activeHatimSubKey] = [...(localStorageCuzObj[activeHatimSubKey] || []), hatimNo];
             localStorage.setItem("cuz", JSON.stringify(localStorageCuzObj));
             rememberPart({key: extractKey(), type: 'cuz', route: `/cuz/${extractKey()}`, title: cuzlerHatimCardTitle,
-                          subKey: activeHatimSubKey, no: hatimNo, label: `${hatimNo}. cüz`});
+                          subKey: activeHatimSubKey, no: hatimNo, label: juzLabel(hatimNo)});
         }
         setPartIptal(false);
         setPartClaim(false);
@@ -614,7 +615,7 @@ const Question = ({ toggle }) => {
 
         {/** Cüz alma / bırakma */}
         <PartSheet visible={hideDialogBox} onClose={() => setHideDialogBox(false)}
-                   mode={partIptal ? (partAdmin ? 'admin' : partClaim ? 'other' : 'mine') : 'take'} badge={hatimNo} label={`${hatimNo}. cüz`} holder={username}
+                   mode={partIptal ? (partAdmin ? 'admin' : partClaim ? 'other' : 'mine') : 'take'} badge={hatimNo} label={juzLabel(hatimNo)} holder={username}
                    read={Number(hatimNo) >= 1 && Number(hatimNo) <= 30 ? juzRange(Number(hatimNo)) : undefined}
                    onTake={submitPart} onRename={partIptal ? renamePart : undefined} onRelease={() => submitPart(username)}
                    extra={partIptal && <ReactionPicker hatimKey={extractKey().replace("/", "")} subKey={activeHatimSubKey} no={hatimNo}
@@ -646,7 +647,7 @@ const Question = ({ toggle }) => {
                             myParts={allLanguage.flatMap((khatm, khatmIndex) =>
                                 [...khatm[1].cevaplar, ...khatm[2].cevaplar, ...khatm[3].cevaplar]
                                     .filter(({cevap, alindi}) => alindi && isMyPart(khatm.subKey, cevap))
-                                    .map(({cevap}) => allLanguage.length > 1 ? `${khatmIndex + 1}. hatim · ${cevap}. cüz` : `${cevap}. cüz`))}
+                                    .map(({cevap}) => allLanguage.length > 1 ? `${tx(`${khatmIndex + 1}. hatim`, `Khatm ${khatmIndex + 1}`, `الختمة ${khatmIndex + 1}`)} · ${juzLabel(cevap)}` : juzLabel(cevap)))}
 
             ></CuzlerHatimCard>
 
@@ -692,9 +693,9 @@ const Question = ({ toggle }) => {
                         <DeleteHatimIcon onClick={async ()=>{
                             toggleYesHandlerState(yesHandlerForASubKhatm)
                             setYesHandlerStateParameters({_subKey: Language.subKey, _index:index})
-                            dispatch(yesNoDialogAlertActions.changeText("Bu Hatmi silmek istediğinize emin misiniz?"))
+                            dispatch(yesNoDialogAlertActions.changeText(tx("Bu Hatmi silmek istediğinize emin misiniz?", "Are you sure you want to delete this khatm?", "هل أنت متأكد أنك تريد حذف هذه الختمة؟")))
                             dispatch(yesNoDialogAlertActions.toggleVisibility())
-                            }}>Sil</DeleteHatimIcon>
+                            }}>{tx('Sil', 'Delete', 'حذف')}</DeleteHatimIcon>
                     </DeleteHatimIconContainer> : <div></div>}
                 
 
@@ -744,7 +745,7 @@ const Question = ({ toggle }) => {
                                         //alt hatim getir
                                     }
                                    
-                                }}>Göster</ShowHatimIcon>
+                                }}>{tx('Göster', 'Show', 'عرض')}</ShowHatimIcon>
                             </HatimIconContainer>
                         </>)
                     :
@@ -778,7 +779,7 @@ const Question = ({ toggle }) => {
                                     // Cihazda kaydı yoksa: hatmi oluşturan herkesinkini, secret'ı olan kendisininkini değiştirebilir
                                     if(claim && !admin && !hasSecret({hatimKey: extractKey().replace("/", ""), subKey: Language.subKey, legacy: true})){
                                         // Başkasının cüzü: kimin aldığı ve tebrik
-                                        setReactTarget({subKey: Language.subKey, no: cevap, badge: cevap, label: `${cevap}. cüz`, holder: isim});
+                                        setReactTarget({subKey: Language.subKey, no: cevap, badge: cevap, label: juzLabel(cevap), holder: isim});
                                         return;
                                     }
                                     setPartAdmin(admin);

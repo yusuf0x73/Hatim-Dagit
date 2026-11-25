@@ -13,22 +13,28 @@ import styled, {createGlobalStyle} from 'styled-components';
 import {Printer, Users} from 'tabler-icons-react';
 import {Sheet} from 'components/khatmKit';
 import {SheetTitle, SheetText, ButtonStack, SecondaryButton, MainButton} from 'components/khatmKit/styles';
-import {buildSchedule, isRotating, toDate, periodEndDate} from 'plans';
+import {buildSchedule, isRotating, toDate, periodEndDate, MONTH_NAMES} from 'plans';
+import {tx, LOCALE} from 'strings/tx';
 
 export const PER_PAGE = 6;
 
 const chunk = (list, size) => Array.from ({length: Math.ceil (list.length / size)}, (_, i) => list.slice (i * size, (i + 1) * size));
 
-const shortDate = date => date.toLocaleDateString ('tr-TR', {day: 'numeric', month: 'short'});
-const longDate = date => date.toLocaleDateString ('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'});
+const shortDate = date => date.toLocaleDateString (LOCALE, {day: 'numeric', month: 'short'});
+const longDate = date => date.toLocaleDateString (LOCALE, {day: 'numeric', month: 'long', year: 'numeric'});
 
-const columnName = planId => (planId === 'sameSurah' ? 'Sûre' : 'Sayfalar');
 
 const legendOf = (planId, rotating) => {
-  const base = 'Sayfa numaraları Diyanet mushafına göredir. Okuduğunuz günün kutusunu işaretleyin.';
+  const base = tx ('Sayfa numaraları Diyanet mushafına göredir. Okuduğunuz günün kutusunu işaretleyin.',
+                   'Page numbers follow the Diyanet mushaf. Tick the box for each day you read.',
+                   'أرقام الصفحات حسب مصحف ديانت. ضع علامة في مربع اليوم الذي قرأت فيه.');
   if (!rotating) return base;
-  if (planId === 'tenPagesThenJuz') return `Recep–Şaban'da günde 10 sayfa ile bir hatim, Ramazan'da kalınan yerden günde 20 sayfa ile bir hatim daha biter; gün yetmezse son iki günde fazlası okunur. ${base}`;
-  if (planId === 'fivePagesThenTenPages') return `Recep–Şaban'da günde 5, Ramazan'da kalınan yerden günde 10 sayfa okunur; üç ayda tam bir hatim biter, gün yetmezse son iki günde fazlası okunur. ${base}`;
+  if (planId === 'tenPagesThenJuz') return `${tx ("Recep–Şaban'da günde 10 sayfa ile bir hatim, Ramazan'da kalınan yerden günde 20 sayfa ile bir hatim daha biter; gün yetmezse son iki günde fazlası okunur.",
+    "One khatm with 10 pages a day in Rajab–Sha'ban, and another in Ramadan from where you left off with 20 pages a day; if there are not enough days, the extra is read on the last two days.",
+    'ختمة بعشر صفحات يوميًا في رجب وشعبان، وختمة أخرى في رمضان من حيث توقفت بعشرين صفحة يوميًا؛ وإن لم تكفِ الأيام يُقرأ الزائد في آخر يومين.')} ${base}`;
+  if (planId === 'fivePagesThenTenPages') return `${tx ("Recep–Şaban'da günde 5, Ramazan'da kalınan yerden günde 10 sayfa okunur; üç ayda tam bir hatim biter, gün yetmezse son iki günde fazlası okunur.",
+    "5 pages a day in Rajab–Sha'ban, then 10 pages a day in Ramadan from where you left off; a full khatm over the three months. If there are not enough days, the extra is read on the last two days.",
+    'خمس صفحات يوميًا في رجب وشعبان، ثم عشر صفحات يوميًا في رمضان من حيث توقفت؛ فتُختم ختمة كاملة في الأشهر الثلاثة. وإن لم تكفِ الأيام يُقرأ الزائد في آخر يومين.')} ${base}`;
   return base;
 };
 
@@ -44,7 +50,7 @@ const PrintSheets = ({khatm, plan, onDone}) => {
   // Alanlar isme göre: bir kişi birden fazla parça almış olabilir
   const people = [];
   takenSlots.forEach (no => {
-    const name = (parts[no].name || '').trim () || 'İsimsiz';
+    const name = (parts[no].name || '').trim () || tx ('İsimsiz', 'No name', 'بلا اسم');
     const person = people.find (p => p.name === name);
     if (person) person.slots.push (no);
     else people.push ({name, slots: [no]});
@@ -70,32 +76,37 @@ const PrintSheets = ({khatm, plan, onDone}) => {
   return (
     <>
       <Sheet visible={!who} onClose={onDone}>
-        <SheetTitle><Printer size={26} style={{verticalAlign: 'middle'}} /> Çizelgeleri yazdır</SheetTitle>
+        <SheetTitle><Printer size={26} style={{verticalAlign: 'middle'}} /> {tx ('Çizelgeleri yazdır', 'Print the charts', 'اطبع الجداول')}</SheetTitle>
         <SheetText>
-          Her kişiye Recep, Şaban ve Ramazan'ı bir arada gösteren kare bir kart; A4 sayfaya {PER_PAGE} kart sığar ve makasla kolayca kesilir.
-          Boş parçaların isim yeri açık basılır, elle yazılabilir.
+          {tx (`Her kişiye Recep, Şaban ve Ramazan'ı bir arada gösteren kare bir kart; A4 sayfaya ${PER_PAGE} kart sığar ve makasla kolayca kesilir. Boş parçaların isim yeri açık basılır, elle yazılabilir.`,
+               `A square card for each person showing Rajab, Sha'ban and Ramadan together; ${PER_PAGE} cards fit on an A4 page and are easy to cut out. Free parts are printed with a blank name field to fill in by hand.`,
+               `بطاقة مربعة لكل شخص تعرض رجب وشعبان ورمضان معًا؛ تتسع صفحة A4 لـ${PER_PAGE} بطاقات ويسهل قصّها. تُطبع الأقسام المتاحة بخانة اسم فارغة لتُكتب باليد.`)}
         </SheetText>
         {!picking ? (
           <ButtonStack>
-            <SectionLabel>Alınanlar</SectionLabel>
+            <SectionLabel>{tx ('Alınanlar', 'Taken', 'المأخوذة')}</SectionLabel>
             <MainButton type="button" id="printTaken" disabled={takenSlots.length === 0} onClick={() => setWho ('taken')}>
-              Herkesinkini yazdır ({takenSlots.length} kart, {pagesOf (takenSlots.length)} sayfa)
+              {tx (`Herkesinkini yazdır (${takenSlots.length} kart, ${pagesOf (takenSlots.length)} sayfa)`,
+                   `Print everyone's (${takenSlots.length} cards, ${pagesOf (takenSlots.length)} pages)`,
+                   `اطبع جداول الجميع (${takenSlots.length} بطاقة، ${pagesOf (takenSlots.length)} صفحة)`)}
             </MainButton>
             <SecondaryButton type="button" id="printPick" disabled={takenSlots.length === 0} onClick={() => setPicking (true)}>
-              <Users size={20} /> Kişi seçerek yazdır
+              <Users size={20} /> {tx ('Kişi seçerek yazdır', 'Choose people to print', 'اختر أشخاصًا للطباعة')}
             </SecondaryButton>
-            <SectionLabel>Kâğıtla dağıtım</SectionLabel>
+            <SectionLabel>{tx ('Kâğıtla dağıtım', 'Paper distribution', 'التوزيع الورقي')}</SectionLabel>
             <SecondaryButton type="button" id="printAll" onClick={() => setWho ('all')}>
-              Hepsi, boşlar dahil ({plan.slots} {plan.unit}, {pagesOf (plan.slots)} sayfa)
+              {tx (`Hepsi, boşlar dahil (${plan.slots} ${plan.unit}, ${pagesOf (plan.slots)} sayfa)`,
+                   `All, including free ones (${plan.slots} ${plan.unitsAcc}, ${pagesOf (plan.slots)} pages)`,
+                   `الكل، مع المتاحة (${plan.slots} ${plan.unit}، ${pagesOf (plan.slots)} صفحة)`)}
             </SecondaryButton>
           </ButtonStack>
         ) : (
           <>
             {people.length > 6 &&
-              <Search value={query} placeholder="İsim ara" onChange={event => setQuery (event.target.value)} />}
+              <Search value={query} placeholder={tx ('İsim ara', 'Search names', 'ابحث عن اسم')} onChange={event => setQuery (event.target.value)} />}
             <PickTools>
-              <button type="button" onClick={() => setPicked (people.map (p => p.name))}>Hepsini seç</button>
-              <button type="button" onClick={() => setPicked ([])}>Temizle</button>
+              <button type="button" onClick={() => setPicked (people.map (p => p.name))}>{tx ('Hepsini seç', 'Select all', 'تحديد الكل')}</button>
+              <button type="button" onClick={() => setPicked ([])}>{tx ('Temizle', 'Clear', 'مسح')}</button>
             </PickTools>
             <PeopleList>
               {visiblePeople.map (person => (
@@ -110,9 +121,11 @@ const PrintSheets = ({khatm, plan, onDone}) => {
             </PeopleList>
             <ButtonStack>
               <MainButton type="button" id="printPicked" disabled={pickedSlots.length === 0} onClick={() => setWho ('picked')}>
-                Seçilenleri yazdır ({picked.length} kişi, {pickedSlots.length} kart, {pagesOf (pickedSlots.length)} sayfa)
+                {tx (`Seçilenleri yazdır (${picked.length} kişi, ${pickedSlots.length} kart, ${pagesOf (pickedSlots.length)} sayfa)`,
+                     `Print selected (${picked.length} people, ${pickedSlots.length} cards, ${pagesOf (pickedSlots.length)} pages)`,
+                     `اطبع المحدد (${picked.length} أشخاص، ${pickedSlots.length} بطاقة، ${pagesOf (pickedSlots.length)} صفحة)`)}
               </MainButton>
-              <SecondaryButton type="button" onClick={() => setPicking (false)}>‹ Geri</SecondaryButton>
+              <SecondaryButton type="button" onClick={() => setPicking (false)}>{tx ('‹ Geri', '‹ Back', '› رجوع')}</SecondaryButton>
             </ButtonStack>
           </>
         )}
@@ -126,7 +139,7 @@ const PrintSheets = ({khatm, plan, onDone}) => {
               <PageHead>
                 <div>
                   <h1>{khatm.header || plan.title}</h1>
-                  <p>{plan.title}{plan.rotatingText ? ` · ${rotating ? 'Dönerli' : 'Sabit'}` : ''} · {longDate (toDate (period.startingDate))} – {longDate (periodEndDate (period))}</p>
+                  <p>{plan.title}{plan.rotatingText ? ` · ${rotating ? tx ('Dönerli', 'Rotating', 'دوّارة') : tx ('Sabit', 'Fixed', 'ثابتة')}` : ''} · {longDate (toDate (period.startingDate))} – {longDate (periodEndDate (period))}</p>
                 </div>
                 <span>{pageIndex + 1} / {pages.length}</span>
               </PageHead>
@@ -151,7 +164,7 @@ const DayCells = ({day}) => {
   return <><td className={`pages${text.length > 9 ? ' long' : ''}`}>{text}</td><td className="box" /></>;
 };
 
-const MONTHS = ['Recep', 'Şaban', 'Ramazan'];
+const MONTHS = MONTH_NAMES;
 
 const PersonCard = ({no, khatm, plan}) => {
   const days = buildSchedule (khatm.plan, no, khatm.period, khatm.rotating);
@@ -163,7 +176,7 @@ const PersonCard = ({no, khatm, plan}) => {
     <Card data-print-slot={no}>
       <CardHead>
         <b>{label.title}</b>
-        <Name>İsim: {part.isTaken && part.name ? <b>{part.name}</b> : <i />}</Name>
+        <Name>{tx ('İsim', 'Name', 'الاسم')}: {part.isTaken && part.name ? <b>{part.name}</b> : <i />}</Name>
       </CardHead>
       <Table>
         <colgroup>
@@ -172,7 +185,7 @@ const PersonCard = ({no, khatm, plan}) => {
         </colgroup>
         <thead>
           <tr className="month">
-            <th className="no">Gün</th>
+            <th className="no">{tx ('Gün', 'Day', 'اليوم')}</th>
             {months.map ((list, i) => (
               <th key={i} colSpan={2}>{MONTHS[i]} <small>{list.length ? shortDate (list[0].date) : ''}</small></th>
             ))}

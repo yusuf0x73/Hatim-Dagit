@@ -228,6 +228,7 @@ let english = {
       EvradEzkar: 'Distribute Vird-Dhikr',
       Header: {
         Text: 'Make New Khatm',
+        Text3MonthProgram: 'Choose a plan',
         InputSpan: [
           'Title',
           'Description',
@@ -239,7 +240,7 @@ let english = {
           'Total Khatm Number Will Be Finished',
           'Rotated Khatm',
         ],
-        Input: ['Please enter a Khatm title'],
+        Input: ['Please enter a Khatm title', 'Please enter a description for the Khatm'],
         Button: 'Continue',
       },
       Final: {

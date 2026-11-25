@@ -1,5 +1,6 @@
 //                                     BİSMİLLAHİRRAHMANİRRAHİM
 
+import {juzLabel} from 'plans/quran';
 import React, {useEffect, useMemo, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 import {CalendarEvent, Plus, ChevronDown, ChevronUp, Check} from 'tabler-icons-react';
@@ -55,7 +56,7 @@ const yearlySchedule = (data, no) => {
       index: i,
       group: String (start.getFullYear ()),
       label: step > 1 ? `${formatDay (start)} – ${formatDay (end)}` : formatDay (start),
-      title: `${juz}. cüz`,
+      title: juzLabel (juz),
       subtitle: fmt (Language.Kit.KhatmNo, {n: i + 1}),
       isToday: today >= start && today <= end,
     });
@@ -122,7 +123,7 @@ const YearlyPage = () => {
   const myParts = khatms.flatMap ((k, index) =>
     k.parts.filter (p => isMine (p.no, k.subKey))
       .map (p => ({
-        label: khatms.length > 1 ? `${fmt (Language.Kit.KhatmNo, {n: index + 1})} · ${p.no}. cüz` : `${p.no}. cüz`,
+        label: khatms.length > 1 ? `${fmt (Language.Kit.KhatmNo, {n: index + 1})} · ${juzLabel (p.no)}` : juzLabel (p.no),
         // Dokununca doğrudan okuma çizelgesi açılır
         onClick: () => setChart ({subKey: k.subKey, no: p.no}),
       })));
@@ -143,10 +144,10 @@ const YearlyPage = () => {
     }
     localDatabase.cuzAl (name, no, subKey, true, data.makeNewHatim);
     rememberPart ({key: hatimKey, type: 'yillik', route: `/yillik/${hatimKey}`, title: data.header,
-                   subKey, no, label: `${no}. cüz`});
+                   subKey, no, label: juzLabel (no)});
     setLocalVersion (v => v + 1);
     setPart (null);
-    setJustTaken ({title: takenTitle (`${no}. cüz`), text: Language.Kit.TakenChartHint, read: juzRange (no)});
+    setJustTaken ({title: takenTitle (juzLabel (no)), text: Language.Kit.TakenChartHint, read: juzRange (no)});
   };
 
   const rename = async name => {
@@ -162,7 +163,7 @@ const YearlyPage = () => {
       // Secret tuttu: cüz bu cihazındı, yerel kayıt geri gelir
       localDatabase.cuzAl (name, no, subKey, true, data.makeNewHatim);
       rememberPart ({key: hatimKey, type: 'yillik', route: `/yillik/${hatimKey}`, title: data.header,
-                     subKey, no, label: `${no}. cüz`});
+                     subKey, no, label: juzLabel (no)});
       setLocalVersion (v => v + 1);
     } else if (part.mode === 'mine') {
       localDatabase.cuzIsimDegistir (name, no, subKey);
@@ -337,7 +338,7 @@ const YearlyPage = () => {
         <StopAutoButton type="button" onClick={stopAuto}>{Language.Kit.StopAuto}</StopAutoButton>}
 
       <PartSheet visible={part != null} onClose={() => setPart (null)} busy={busy}
-                 mode={part ? part.mode : 'take'} badge={part ? part.no : ''} label={part ? `${part.no}. cüz` : ''}
+                 mode={part ? part.mode : 'take'} badge={part ? part.no : ''} label={part ? juzLabel (part.no) : ''}
                  read={part ? juzRange (part.no) : undefined}
                  holder={part ? part.name : ''}
                  onTake={take} onRename={rename} onRelease={release}
@@ -350,7 +351,7 @@ const YearlyPage = () => {
                  </>} />
 
       <ChartSheet visible={chart != null} onClose={() => setChart (null)}
-                  title={chart ? `${chart.no}. cüz · ${Language.Kit.ChartTitle}` : ''}
+                  title={chart ? `${juzLabel (chart.no)} · ${Language.Kit.ChartTitle}` : ''}
                   subtitle={chart && khatms.length > 1 ? fmt (Language.Kit.KhatmNo, {n: chartKhatmIndex + 1}) : data.header}
                   days={chartDays}
                   canEdit={chart ? isMine (chart.no, chart.subKey) : false}

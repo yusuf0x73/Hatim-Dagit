@@ -1,12 +1,16 @@
 //                                     BİSMİLLAHİRRAHMANİRRAHİM
 
-import {SURAHS, TOTAL_PAGES, juzRange, juzPieceRange, surahOfPage, juzOfPage} from './quran';
+import {SURAHS, TOTAL_PAGES, juzRange, juzPieceRange, surahOfPage, juzOfPage,
+        juzLabel, pageLabel, pagesLabel, surahLabel, halfLabel, quarterLabel, quartersLabel, ayahsLabel} from './quran';
+import {tx, LOCALE} from '../strings/tx';
 
-export const MONTH_NAMES = ['Recep', 'Şaban', 'Ramazan'];
-// "Recep'in 5. günü"
-export const MONTH_GENITIVE = ["Recep'in", "Şaban'ın", "Ramazan'ın"];
+export const MONTH_NAMES = tx (['Recep', 'Şaban', 'Ramazan'], ['Rajab', "Sha'ban", 'Ramadan'], ['رجب', 'شعبان', 'رمضان']);
+// "Recep'in 5. günü" / "Day 5 of Rajab" / "اليوم 5 من رجب"
+const MONTH_GENITIVE_TR = ["Recep'in", "Şaban'ın", "Ramazan'ın"];
+export const monthDayLabel = (monthIndex, day) =>
+  tx (`${MONTH_GENITIVE_TR[monthIndex]} ${day}. günü`, `day ${day} of ${MONTH_NAMES[monthIndex]}`, `اليوم ${day} من ${MONTH_NAMES[monthIndex]}`);
 
-const pagesText = ({start, end}) => (start === end ? `${start}. sayfa` : `${start}–${end}. sayfalar`);
+const pagesText = pagesLabel;
 
 const juzPiece = (index, piecesPerJuz) => {
   const juz = Math.ceil (index / piecesPerJuz);
@@ -14,24 +18,24 @@ const juzPiece = (index, piecesPerJuz) => {
   return {juz, piece, range: juzPieceRange (juz, piece, piecesPerJuz)};
 };
 
-const pieceName = piecesPerJuz => (piecesPerJuz === 2 ? 'yarı' : 'çeyrek');
 
 const readingOfPiece = (index, piecesPerJuz) => {
   const {juz, piece, range} = juzPiece (index, piecesPerJuz);
-  return {title: `${juz}. cüz · ${piece}. ${pieceName (piecesPerJuz)}`, subtitle: pagesText (range), pages: `${range.start}–${range.end}`};
+  return {title: `${juzLabel (juz)} · ${piecesPerJuz === 2 ? halfLabel (piece) : quarterLabel (piece)}`, subtitle: pagesText (range), pages: `${range.start}–${range.end}`};
 };
 
 // pages: kâğıt çizelgede "okunacak sayfalar" sütununa yazılan kısa bilgi (1–10 / 12 / 36. Yâsîn)
-const readingOfJuz = juz => ({title: `${juz}. cüz`, subtitle: pagesText (juzRange (juz)), pages: `${juzRange (juz).start}–${juzRange (juz).end}`});
+const readingOfJuz = juz => ({title: juzLabel (juz), subtitle: pagesText (juzRange (juz)), pages: `${juzRange (juz).start}–${juzRange (juz).end}`});
 
 const readingOfSurah = number => {
   const surah = SURAHS[number - 1];
-  return {title: `${surah.number}. ${surah.name} Sûresi`, subtitle: `${surah.ayahs} âyet · ${surah.page}. sayfadan başlar`, pages: `${surah.number}. ${surah.name}`};
+  return {title: `${surah.number}. ${surahLabel (surah.name)}`,
+          subtitle: `${ayahsLabel (surah.ayahs)} · ${tx (`${surah.page}. sayfadan başlar`, `starts on page ${surah.page}`, `تبدأ من الصفحة ${surah.page}`)}`, pages: `${surah.number}. ${surah.name}`};
 };
 
 const readingOfPage = page => ({
-  title: `${page}. sayfa`,
-  subtitle: `${juzOfPage (page)}. cüz · ${surahOfPage (page).name} Sûresi`,
+  title: pageLabel (page),
+  subtitle: `${juzLabel (juzOfPage (page))} · ${surahLabel (surahOfPage (page).name)}`,
   pages: String (page),
 });
 
@@ -45,15 +49,15 @@ const quarterOf = q => juzPiece (q, 4);
 // Bir okumanın başı / sonu: cüz, yarım ya da çeyrek sınırına göre en sade ad
 const startLabel = q => {
   const {juz, piece} = quarterOf (q);
-  if (piece === 1) return `${juz}. cüz`;
-  if (piece === 3) return `${juz}. cüz 2. yarı`;
-  return `${juz}. cüz ${piece}. çeyrek`;
+  if (piece === 1) return juzLabel (juz);
+  if (piece === 3) return `${juzLabel (juz)} ${halfLabel (2)}`;
+  return `${juzLabel (juz)} ${quarterLabel (piece)}`;
 };
 const endLabel = q => {
   const {juz, piece} = quarterOf (q);
-  if (piece === 4) return `${juz}. cüz`;
-  if (piece === 2) return `${juz}. cüz 1. yarı`;
-  return `${juz}. cüz ${piece}. çeyrek`;
+  if (piece === 4) return juzLabel (juz);
+  if (piece === 2) return `${juzLabel (juz)} ${halfLabel (1)}`;
+  return `${juzLabel (juz)} ${quarterLabel (piece)}`;
 };
 
 // q'dan başlayan "count" çeyrek (ör. 3. cüz 2. yarı – 4. cüz 1. yarı · 51–70. sayfalar)
@@ -62,15 +66,16 @@ const readingOfQuarters = (q, count) => {
   const first = quarterOf (q);
   const last = quarterOf (lastQ);
   let title;
-  if (count === 4 && first.piece === 1) title = `${first.juz}. cüz`;
-  else if (count === 2 && (first.piece === 1 || first.piece === 3)) title = `${first.juz}. cüz · ${(first.piece + 1) / 2}. yarı`;
-  else if (count === 1) title = `${first.juz}. cüz · ${first.piece}. çeyrek`;
-  else if (first.juz === last.juz && count < 4) title = `${first.juz}. cüz · ${first.piece}.–${last.piece}. çeyrek`;
+  if (count === 4 && first.piece === 1) title = juzLabel (first.juz);
+  else if (count === 2 && (first.piece === 1 || first.piece === 3)) title = `${juzLabel (first.juz)} · ${halfLabel ((first.piece + 1) / 2)}`;
+  else if (count === 1) title = `${juzLabel (first.juz)} · ${quarterLabel (first.piece)}`;
+  else if (first.juz === last.juz && count < 4) title = `${juzLabel (first.juz)} · ${quartersLabel (first.piece, last.piece)}`;
   else title = `${startLabel (q)} – ${endLabel (lastQ)}`;
   // 30. cüzden 1. cüze geçiş
   const wraps = last.range.end < first.range.start;
   const subtitle = wraps
-    ? `${first.range.start}–${TOTAL_PAGES} ve 1–${last.range.end}. sayfalar`
+    ? tx (`${first.range.start}–${TOTAL_PAGES} ve 1–${last.range.end}. sayfalar`, `Pages ${first.range.start}–${TOTAL_PAGES} and 1–${last.range.end}`,
+          `الصفحات ${first.range.start}–${TOTAL_PAGES} و1–${last.range.end}`)
     : pagesText ({start: first.range.start, end: last.range.end});
   const pages = wraps
     ? `${first.range.start}–${TOTAL_PAGES}, 1–${last.range.end}`
@@ -105,6 +110,35 @@ const repeat = (value, times) => Array.from ({length: times}, () => value);
 // Sabit planda "step" hep 0'dır: kişi her gün aynı yeri okur
 const advance = (rotating, step) => (rotating ? step : 0);
 
+/*
+  Dağıtılan birimin adları. unitKind mantık için (dilden bağımsız), diğerleri arayüz metni:
+  unit: "Alınan parça", unitAcc: "Şu parçayı aldınız", units: başlık / çoğul, takeText: düğme.
+*/
+const PIECE_WORDS = {
+  unitKind: 'piece',
+  unit: tx ('parça', 'part', 'قسم'),
+  unitAcc: tx ('parçayı', 'part', 'القسم'),
+  unitsAcc: tx ('parçaları', 'parts', 'الأقسام'),
+  units: tx ('Parçalar', 'Parts', 'الأقسام'),
+  takeText: tx ('Parçayı al', 'Take this part', 'خذ هذا القسم'),
+};
+const PAGE_WORDS = {
+  unitKind: 'page',
+  unit: tx ('sayfa', 'page', 'صفحة'),
+  unitAcc: tx ('sayfayı', 'page', 'الصفحة'),
+  unitsAcc: tx ('sayfaları', 'pages', 'الصفحات'),
+  units: tx ('Sayfalar', 'Pages', 'الصفحات'),
+  takeText: tx ('Sayfayı al', 'Take this page', 'خذ هذه الصفحة'),
+};
+const SURAH_WORDS = {
+  unitKind: 'surah',
+  unit: tx ('sûre', 'surah', 'سورة'),
+  unitAcc: tx ('sûreyi', 'surah', 'السورة'),
+  unitsAcc: tx ('sûreleri', 'surahs', 'السور'),
+  units: tx ('Sûreler', 'Surahs', 'السور'),
+  takeText: tx ('Sûreyi al', 'Take this surah', 'خذ هذه السورة'),
+};
+
 /**
  * Üç aylar okuma planları.
  * slots: dağıtılan parça sayısı
@@ -114,7 +148,7 @@ export const PLANS = {
   // Eski "3 aylar boyunca günde 1 cüz" (ucaylarhergun1cuz sayfası). Her ay aldığı cüzden başlar.
   eachday1part: {
     id: 'eachday1part',
-    title: '3 aylar boyunca günde 1 cüz',
+    title: tx ('3 aylar boyunca günde 1 cüz', '1 juz a day for the three months', 'جزء يوميًا طوال الأشهر الثلاثة'),
     slots: 30,
     slotLabel: slot => readingOfJuz (slot),
     defaultRotating: true,
@@ -123,16 +157,22 @@ export const PLANS = {
 
   tenPagesThenJuz: {
     id: 'tenPagesThenJuz',
-    title: "Recep ve Şaban'da günde 10 sayfa, Ramazan'da günde 1 cüz",
-    description: 'Kur\'ân 60 parçaya (yarım cüz, 10 sayfa) bölünür. Recep ve Şaban\'da günde 10 sayfa, Ramazan\'da günde 1 cüz okunur.',
+    title: tx ("Recep ve Şaban'da günde 10 sayfa, Ramazan'da günde 1 cüz",
+               "10 pages a day in Rajab and Sha'ban, 1 juz a day in Ramadan",
+               '١٠ صفحات يوميًا في رجب وشعبان، وجزء يوميًا في رمضان'),
+    description: tx ('Kur\'ân 60 parçaya (yarım cüz, 10 sayfa) bölünür. Recep ve Şaban\'da günde 10 sayfa, Ramazan\'da günde 1 cüz okunur.',
+                     "The Qur'an is divided into 60 parts (half a juz, 10 pages). 10 pages a day are read in Rajab and Sha'ban, 1 juz a day in Ramadan.",
+                     'يُقسَّم القرآن إلى ٦٠ قسمًا (نصف جزء، ١٠ صفحات). تُقرأ ١٠ صفحات يوميًا في رجب وشعبان، وجزء يوميًا في رمضان.'),
     slots: 60,
-    unit: 'parça',
-    unitAcc: 'parçayı',
-    takeText: 'Parçayı al',
+    ...PIECE_WORDS,
     slotLabel: slot => readingOfPiece (slot, 2),
     defaultRotating: true,
-    rotatingText: 'Her gün sıradaki 10 sayfaya geçilir; Recep–Şaban\'da bir hatim biter. Ramazan\'da kalınan yerden devam edilip her gün 20 sayfa (1 cüz) ile ikinci hatim biter. Gün sayısı yetmezse eksik sayfalar son iki güne eklenir.',
-    fixedText: 'Recep ve Şaban\'da her gün aynı 10 sayfa, Ramazan\'da her gün o sayfaların cüzü okunur.',
+    rotatingText: tx ('Her gün sıradaki 10 sayfaya geçilir; Recep–Şaban\'da bir hatim biter. Ramazan\'da kalınan yerden devam edilip her gün 20 sayfa (1 cüz) ile ikinci hatim biter. Gün sayısı yetmezse eksik sayfalar son iki güne eklenir.',
+                      "Each day you move on to the next 10 pages; one khatm is completed in Rajab–Sha'ban. In Ramadan you continue from where you left off with 20 pages (1 juz) a day and complete a second khatm. If there are not enough days, the missing pages are added to the last two days.",
+                      'كل يوم تنتقل إلى الصفحات العشر التالية، فتُختم ختمة في رجب وشعبان. وفي رمضان تُكمل من حيث توقفت بـ٢٠ صفحة (جزء) يوميًا فتُختم ختمة ثانية. وإن لم تكفِ الأيام تُضاف الصفحات الناقصة إلى آخر يومين.'),
+    fixedText: tx ('Recep ve Şaban\'da her gün aynı 10 sayfa, Ramazan\'da her gün o sayfaların cüzü okunur.',
+                   "The same 10 pages every day in Rajab and Sha'ban, and the juz of those pages every day in Ramadan.",
+                   'الصفحات العشر نفسها كل يوم في رجب وشعبان، وجزء تلك الصفحات كل يوم في رمضان.'),
     reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) => {
       if (monthIndex < 2) return readingOfPiece (rotate (slot, advance (rotating, dayInPeriod), 60), 2);
       return readingOfJuz (Math.ceil (slot / 2));
@@ -148,16 +188,22 @@ export const PLANS = {
 
   fivePagesThenTenPages: {
     id: 'fivePagesThenTenPages',
-    title: "Recep ve Şaban'da günde 5 sayfa, Ramazan'da günde 10 sayfa",
-    description: 'Kur\'ân 120 parçaya (hizb, 5 sayfa) bölünür. Recep ve Şaban\'da günde 5 sayfa, Ramazan\'da günde 10 sayfa okunur.',
+    title: tx ("Recep ve Şaban'da günde 5 sayfa, Ramazan'da günde 10 sayfa",
+               "5 pages a day in Rajab and Sha'ban, 10 pages a day in Ramadan",
+               '٥ صفحات يوميًا في رجب وشعبان، و١٠ صفحات يوميًا في رمضان'),
+    description: tx ('Kur\'ân 120 parçaya (hizb, 5 sayfa) bölünür. Recep ve Şaban\'da günde 5 sayfa, Ramazan\'da günde 10 sayfa okunur.',
+                     "The Qur'an is divided into 120 parts (a quarter juz, 5 pages). 5 pages a day are read in Rajab and Sha'ban, 10 pages a day in Ramadan.",
+                     'يُقسَّم القرآن إلى ١٢٠ قسمًا (ربع جزء، ٥ صفحات). تُقرأ ٥ صفحات يوميًا في رجب وشعبان، و١٠ صفحات يوميًا في رمضان.'),
     slots: 120,
-    unit: 'parça',
-    unitAcc: 'parçayı',
-    takeText: 'Parçayı al',
+    ...PIECE_WORDS,
     slotLabel: slot => readingOfPiece (slot, 4),
     defaultRotating: true,
-    rotatingText: 'Her gün sıradaki 5 sayfaya geçilir; Ramazan\'da kalınan yerden devam edilip her gün 10 sayfa okunur ve üç ayda tam bir hatim biter. Gün sayısı yetmezse eksik sayfalar son iki güne eklenir.',
-    fixedText: 'Recep ve Şaban\'da her gün aynı 5 sayfa, Ramazan\'da her gün o sayfaları içeren 10 sayfa okunur.',
+    rotatingText: tx ('Her gün sıradaki 5 sayfaya geçilir; Ramazan\'da kalınan yerden devam edilip her gün 10 sayfa okunur ve üç ayda tam bir hatim biter. Gün sayısı yetmezse eksik sayfalar son iki güne eklenir.',
+                      'Each day you move on to the next 5 pages; in Ramadan you continue from where you left off with 10 pages a day, completing a full khatm over the three months. If there are not enough days, the missing pages are added to the last two days.',
+                      'كل يوم تنتقل إلى الصفحات الخمس التالية، وفي رمضان تُكمل من حيث توقفت بـ١٠ صفحات يوميًا فتُختم ختمة كاملة في الأشهر الثلاثة. وإن لم تكفِ الأيام تُضاف الصفحات الناقصة إلى آخر يومين.'),
+    fixedText: tx ('Recep ve Şaban\'da her gün aynı 5 sayfa, Ramazan\'da her gün o sayfaları içeren 10 sayfa okunur.',
+                   "The same 5 pages every day in Rajab and Sha'ban, and the 10 pages containing them every day in Ramadan.",
+                   'الصفحات الخمس نفسها كل يوم في رجب وشعبان، و١٠ صفحات تشملها كل يوم في رمضان.'),
     reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) => {
       if (monthIndex < 2) return readingOfPiece (rotate (slot, advance (rotating, dayInPeriod), 120), 4);
       return readingOfPiece (Math.ceil (slot / 2), 2);
@@ -169,32 +215,38 @@ export const PLANS = {
 
   samePage: {
     id: 'samePage',
-    title: '3 aylar boyunca her gün 1 sayfa',
-    description: 'Kur\'ân\'ın 604 sayfası dağıtılır; herkes her gün 1 sayfa okur. Bütün sayfalar alındığında her gün bir hatim tamamlanır.',
+    title: tx ('3 aylar boyunca her gün 1 sayfa', '1 page a day for the three months', 'صفحة يوميًا طوال الأشهر الثلاثة'),
+    description: tx ('Kur\'ân\'ın 604 sayfası dağıtılır; herkes her gün 1 sayfa okur. Bütün sayfalar alındığında her gün bir hatim tamamlanır.',
+                     "The 604 pages of the Qur'an are shared out; everyone reads 1 page a day. Once all pages are taken, a khatm is completed every day.",
+                     'تُوزَّع صفحات القرآن الـ٦٠٤؛ ويقرأ كل شخص صفحة يوميًا. وعند أخذ كل الصفحات تُختم ختمة كاملة كل يوم.'),
     slots: 604,
-    unit: 'sayfa',
-    unitAcc: 'sayfayı',
-    takeText: 'Sayfayı al',
+    ...PAGE_WORDS,
     slotLabel: slot => readingOfPage (slot),
     defaultRotating: false,
-    rotatingText: 'Aldığınız sayfadan başlayıp her gün bir sonraki sayfayı okursunuz.',
-    fixedText: 'Aldığınız sayfayı üç ay boyunca her gün okursunuz.',
+    rotatingText: tx ('Aldığınız sayfadan başlayıp her gün bir sonraki sayfayı okursunuz.',
+                      'Starting from the page you take, you read the next page each day.',
+                      'تبدأ من الصفحة التي أخذتها وتقرأ الصفحة التالية كل يوم.'),
+    fixedText: tx ('Aldığınız sayfayı üç ay boyunca her gün okursunuz.', 'You read the page you take every day for three months.',
+                   'تقرأ الصفحة التي أخذتها كل يوم طوال ثلاثة أشهر.'),
     reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) =>
       readingOfPage (rotate (slot, advance (rotating, dayInPeriod), 604)),
   },
 
   sameSurah: {
     id: 'sameSurah',
-    title: '3 aylar boyunca her gün 1 sûre',
-    description: '114 sûre dağıtılır; herkes her gün 1 sûre okur. Bütün sûreler alındığında her gün bir hatim tamamlanır.',
+    title: tx ('3 aylar boyunca her gün 1 sûre', '1 surah a day for the three months', 'سورة يوميًا طوال الأشهر الثلاثة'),
+    description: tx ('114 sûre dağıtılır; herkes her gün 1 sûre okur. Bütün sûreler alındığında her gün bir hatim tamamlanır.',
+                     'The 114 surahs are shared out; everyone reads 1 surah a day. Once all surahs are taken, a khatm is completed every day.',
+                     'تُوزَّع السور الـ١١٤؛ ويقرأ كل شخص سورة يوميًا. وعند أخذ كل السور تُختم ختمة كاملة كل يوم.'),
     slots: 114,
-    unit: 'sûre',
-    unitAcc: 'sûreyi',
-    takeText: 'Sûreyi al',
+    ...SURAH_WORDS,
     slotLabel: slot => readingOfSurah (slot),
     defaultRotating: false,
-    rotatingText: 'Aldığınız sûreden başlayıp her gün bir sonraki sûreyi okursunuz.',
-    fixedText: 'Aldığınız sûreyi üç ay boyunca her gün okursunuz.',
+    rotatingText: tx ('Aldığınız sûreden başlayıp her gün bir sonraki sûreyi okursunuz.',
+                      'Starting from the surah you take, you read the next surah each day.',
+                      'تبدأ من السورة التي أخذتها وتقرأ السورة التالية كل يوم.'),
+    fixedText: tx ('Aldığınız sûreyi üç ay boyunca her gün okursunuz.', 'You read the surah you take every day for three months.',
+                   'تقرأ السورة التي أخذتها كل يوم طوال ثلاثة أشهر.'),
     reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) =>
       readingOfSurah (rotate (slot, advance (rotating, dayInPeriod), 114)),
   },
@@ -262,4 +314,4 @@ export const periodEndDate = period => {
 };
 
 export const formatDate = date =>
-  date.toLocaleDateString ('tr-TR', {day: 'numeric', month: 'long', weekday: 'short'});
+  date.toLocaleDateString (LOCALE, {day: 'numeric', month: 'long', weekday: 'short'});

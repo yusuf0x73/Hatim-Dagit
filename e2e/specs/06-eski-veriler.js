@@ -15,7 +15,7 @@ const FILE = path.join (__dirname, '..', 'fixtures', 'legacy-keys.json');
 const samples = fs.existsSync (FILE) ? JSON.parse (fs.readFileSync (FILE, 'utf8')) : [];
 
 // Sayfa ya parçaları ya da bilinen bir durumu (silinmiş / bulunamadı) göstermeli
-const STATES = ['Hatim silinmiş', 'silindi', 'bulunamadı', 'Link hatalı', 'hatalı'];
+const STATES = ['Hatim silinmiş', 'tarafından silinmiş', 'silindi', 'bulunamadı', 'Link hatalı', 'hatalı'];
 
 module.exports = ({test}) => {
   const groups = {};
