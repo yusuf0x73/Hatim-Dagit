@@ -39,8 +39,8 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
   const [hatimDescription, setHatimDescription] = useState('')
   const [hatimCount, setHatimCount] = useState(1);
   const [makeNewHatim, setMakeNewHatim] = useState(false)
-  // Yeni hatimler hep "sabit" başlar; kaydı olmayan eski hatimler planın varsayılanıyla okunur
-  const [rotating, setRotating] = useState(false)
+  // null: planın varsayılanı (10/5 sayfa planlarında "dönerli"); kullanıcı seçerse o geçerli
+  const [rotating, setRotating] = useState(null)
 
   const database = useContext(DatabaseContext)
 
@@ -50,7 +50,7 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
   const close3Months = () => {
     setMonths3DialogVisible(false);
     setType("options");
-    setRotating(false);
+    setRotating(null);
   }
 
   const startCreating = () => {
@@ -106,7 +106,7 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
     const planId = type;
     startCreating();
     setType("options");
-    setRotating(false);
+    setRotating(null);
     try {
       if(planId === 'eachday1part') await createEachDay1Part();
       else await createPlan(planId);
@@ -144,14 +144,14 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
 
             {type!="options" &&
             <>
-                        <BackLink onClick={()=>setType("options")}>‹ Diğer seçenekler</BackLink>
+                        <BackLink onClick={()=>{ setType("options"); setRotating(null); }}>‹ Diğer seçenekler</BackLink>
 
                         <OptionText>{PLANS[type].description || OPTION_DESCRIPTION[type]}</OptionText>
 
                         {/* Dönerli: her gün sıradaki yer; sabit: her gün aynı yer */}
                         {PLANS[type].rotatingText &&
                             <ModeRow role="radiogroup">
-                                {[false, true].map(value => (
+                                {[true, false].map(value => (
                                     <ModeOption key={String(value)} type="button" role="radio" id={value ? 'rotating' : 'fixed'}
                                                 aria-checked={isRotating(type, rotating) === value}
                                                 active={isRotating(type, rotating) === value}

@@ -6,3 +6,4 @@ build/
 e2e/out/
 e2e/fixtures/
 .DS_Store
+CLAUDE.md

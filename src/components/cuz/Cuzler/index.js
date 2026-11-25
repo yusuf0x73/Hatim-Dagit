@@ -69,6 +69,8 @@ const Question = ({ toggle }) => {
     const [username, setUsername] = useState("");
     const [hatimNo, setHatimNo] = useState("");
     const [allLanguage, setAllLanguage] = useState([dataFormat]);
+    // "Okunuyor / Okundu" şeridi: hatmi oluşturan seçer; alanı olmayan eski hatimlerde açık
+    const [readTracking, setReadTracking] = useState(true);
     const [hideRespond, setHideRespond] = useState(false);
     const [loadingVisibility, setLoadingVisibility] = useState(true);
     const [linkCopiedText, setLinkCopiedText] = useState(LanguageData["/cuz"].After.Copy.Before);
@@ -279,6 +281,7 @@ const Question = ({ toggle }) => {
             // console.log(result.khatmSubKeys)
             setKhatmSubKeys(result.khatmSubKeys);
             setCurrentKhatmSubKey(result.activeSubKhatmKey)
+            setReadTracking(result.okumaTakibi !== false);
 
             let makeNewHatimStateTemp = result.makeNewHatim;
 
@@ -484,7 +487,7 @@ const Question = ({ toggle }) => {
                             rememberPart({key: extractKey(), type: 'cuz', route: `/cuz/${extractKey()}`, title: cuzlerHatimCardTitle,
                                           subKey: activeHatimSubKey, no: hatimNo, label: `${hatimNo}. cüz`});
                             dispatch (loadingOverlayActions.toggleVisibility ());
-                            setJustTaken({title: takenTitle(`${hatimNo}. cüz`), text: LanguageData.CuzGrid.ReadHint,
+                            setJustTaken({title: takenTitle(`${hatimNo}. cüz`), text: readTracking ? LanguageData.CuzGrid.ReadHint : undefined,
                                       read: juzRange(Number(hatimNo))})
                             // setTotalPartsTaken(database.countNumberOfCuzs(tempAllLanguages))
                         }
@@ -652,8 +655,8 @@ const Question = ({ toggle }) => {
         {(index==0) && <GridToolbar>
             <Legend>
                 <LegendItem kind="free">{LanguageData.CuzGrid.Available}</LegendItem>
-                <LegendItem kind="taken">{LanguageData.CuzGrid.Taken}</LegendItem>
-                <LegendItem kind="read">{LanguageData.CuzGrid.Read}</LegendItem>
+                <LegendItem kind={readTracking ? "taken" : "takenDark"}>{LanguageData.CuzGrid.Taken}</LegendItem>
+                {readTracking && <LegendItem kind="read">{LanguageData.CuzGrid.Read}</LegendItem>}
             </Legend>
             <RefreshKhatmsContainer onClick={async ()=>{
                     if(isRefreshKhatmClickable == false){
@@ -762,7 +765,7 @@ const Question = ({ toggle }) => {
                     [...Language[1].cevaplar, ...Language[2].cevaplar, ...Language[3].cevaplar].map(({cevap, alindi, isim, isRead}) => {
                         const mine = isMyPart(Language.subKey, cevap);
                         return (
-                        <ResponseItemContainer key={cevap} taken={alindi} read={isRead} mine={mine}>
+                        <ResponseItemContainer key={cevap} taken={alindi} read={readTracking && isRead} tracked={readTracking} mine={mine}>
                             <ResponseItem bgColor={alindi} data-sub={Language.subKey} data-part={cevap} onClick={()=>{
 
                                 if (alindi) {
@@ -808,7 +811,7 @@ const Question = ({ toggle }) => {
                                 {alindi && <ReactionChips charts={Language.charts} no={cevap} />}
                             </ResponseItem>
 
-                            {alindi && <IsReadItem bgColor={isRead} onClick={()=>{
+                            {alindi && readTracking && <IsReadItem bgColor={isRead} onClick={()=>{
                                     if(isRead){
                                         return;
                                     }

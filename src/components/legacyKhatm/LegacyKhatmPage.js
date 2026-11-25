@@ -415,7 +415,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
       <GridToolbar>
         <Legend>
           <LegendItem kind="free">{Language.CuzGrid.Available}</LegendItem>
-          <LegendItem kind="taken">{Language.CuzGrid.Taken}</LegendItem>
+          <LegendItem kind={config.chart ? 'taken' : 'takenDark'}>{Language.CuzGrid.Taken}</LegendItem>
           {config.chart && <LegendItem kind="read">{Language.Kit.ReadToday}</LegendItem>}
         </Legend>
       </GridToolbar>
@@ -446,7 +446,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
                     const mine = c.alindi && isMine (khatm.subKey, c.cevap);
                     const read = c.alindi && readToday (khatm, c.cevap);
                     return (
-                      <ResponseItemContainer key={c.cevap} taken={c.alindi} read={read} mine={mine}>
+                      <ResponseItemContainer key={c.cevap} taken={c.alindi} read={read} tracked={!!config.chart} mine={mine}>
                         <ResponseItem bgColor={c.alindi} data-sub={khatm.subKey} data-part={c.cevap} onClick={() => openPart (khatm.subKey, c)}>
                           {mine && <MineBadge>{Language.CuzGrid.Mine}</MineBadge>}
                           <ResponseText>{c.cevap}</ResponseText>

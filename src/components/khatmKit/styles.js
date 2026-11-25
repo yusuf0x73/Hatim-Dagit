@@ -404,9 +404,10 @@ export const ProgressTrack = styled.div`
   }
 `;
 
+// Kaydırma alanının üst iç boşluğu (PanelBody: 26px / 28px) kadar yukarı yapışır; yoksa başlığın üstünde boşluk kalır
 export const GroupTitle = styled.h3`
   position: sticky;
-  top: -1px;
+  top: -27px;
   z-index: 1;
   margin: 0 -20px;
   padding: 10px 20px 6px;
@@ -418,6 +419,7 @@ export const GroupTitle = styled.h3`
   color: var(--gold-600);
 
   @media screen and (min-width: 600px) {
+    top: -29px;
     margin: 0 -26px;
     padding: 10px 26px 6px;
   }

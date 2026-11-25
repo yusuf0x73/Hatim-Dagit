@@ -18,6 +18,8 @@ import {TodayReadings} from 'components/myKhatms';
 import {listKhatms} from 'localStorage/myKhatms';
 import {Book, CalendarEvent, MoonStars, Moon, Heart, ChevronRight, Bookmarks, Adjustments} from 'tabler-icons-react';
 import OzelDialog from '../OzelDialog';
+import Months3Intro from '../Months3Intro';
+import {ReadQuranBanner} from 'components/khatmKit';
 
 const Constr = ({toggle}) => {
     return <DatabaseContext.Consumer>
@@ -141,6 +143,9 @@ const Question = ({ firebase, toggle }) => {
 
             <YearlyKhatmDialog  visible={yearBasedKhatmDialogVisible} setVisible={setYearBasedKhatmDialogVisible} />
 
+            {/* İlk girişte üç aylar hatmi tanıtımı (dönem başına bir kez) */}
+            <Months3Intro onCreate={() => setMonths3DialogVisible(true)} />
+
             <Hero>
                 <Bismillah>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Bismillah>
                 <HeroTitle>{home.Title}</HeroTitle>
@@ -182,6 +187,9 @@ const Question = ({ firebase, toggle }) => {
                         </OptionRow>
                     ))}
                 </OptionList>
+
+                {/* Kur'an okuyucu: hatim oluşturma seçeneklerinden sonra, hatim sayfalarındaki gibi */}
+                <div style={{marginTop: 18}}><ReadQuranBanner /></div>
 
                 <SectionLabel>{home.StepsTitle}</SectionLabel>
 

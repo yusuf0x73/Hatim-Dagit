@@ -123,9 +123,11 @@ Bu uygulama üzerinden siyasi veya dini motifli terör örgütleri adına Hatim 
   Kit: {
     TakenTitle: "{n} aldınız",
     TakenChartHint: "Okudukça çizelgeden işaretleyebilirsiniz.",
-    ReadQuranAll: "Kur'an-ı Kerîm'i oku",
+    ReadQuranAll: "Kur'an-ı Kerîm oku",
     ReadQuranSub: "Diyanet mushafı · kaldığınız sayfadan devam edin",
     ReadQuran: "Kur'an'dan oku",
+    ReadTrackingOption: 'Cüzlerin altında "Okunuyor / Okundu" işareti olsun',
+    ReadTrackingHint: 'Cüzü alan kişi okuyunca "Okudum" diye işaretler; herkes görür.',
     Share: 'Paylaş',
     ShareTitle: 'Hatmi paylaşın',
     Whatsapp: 'WhatsApp',

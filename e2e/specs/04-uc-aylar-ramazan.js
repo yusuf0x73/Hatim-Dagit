@@ -14,7 +14,7 @@ const cevap = (hatim, subKey, no) => {
 };
 
 module.exports = ({test}) => {
-  test ('3 aylar: yeni plan "sabit" kaydedilir; parça alınır, ismi değişir, bırakılır', async ({user}) => {
+  test ('3 aylar: 10 sayfa planı varsayılan "dönerli" kaydedilir; parça alınır, ismi değişir, bırakılır', async ({user}) => {
     const a = await user ();
     await a.goto ('/');
     await a.click ('#months3');
@@ -26,7 +26,7 @@ module.exports = ({test}) => {
 
     const hatim = await dbGet (`hatim/${key}`);
     assert.equal (hatim.plan, 'tenPagesThenJuz');
-    assert.equal (hatim.rotating, false, 'varsayılan sabit olmalı');
+    assert.equal (hatim.rotating, true, 'varsayılan dönerli olmalı');
     const subKey = Object.keys (hatim).find (k => hatim[k] && hatim[k].parts);
     assert.equal (count (hatim[subKey].parts), 60);
 
@@ -48,7 +48,7 @@ module.exports = ({test}) => {
     await waitUntil (async () => (await dbGet (`hatim/${key}/${subKey}/parts/7/isTaken`)) === false, {message: 'bırakılmadı'});
   });
 
-  test ('3 aylar: ikinci oluşturmada da "sabit" seçili kalır', async ({user}) => {
+  test ('3 aylar: seçim sonraki oluşturmaya taşınmaz (sayfa planı yine "sabit")', async ({user}) => {
     const a = await user ();
     await a.goto ('/');
     await a.click ('#months3');

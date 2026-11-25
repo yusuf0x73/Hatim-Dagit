@@ -1,6 +1,6 @@
 //                                     BİSMİLLAHİRRAHMANİRRAHİM
 
-import {SURAHS, juzRange, juzPieceRange, surahOfPage, juzOfPage} from './quran';
+import {SURAHS, TOTAL_PAGES, juzRange, juzPieceRange, surahOfPage, juzOfPage} from './quran';
 
 export const MONTH_NAMES = ['Recep', 'Şaban', 'Ramazan'];
 // "Recep'in 5. günü"
@@ -18,22 +18,89 @@ const pieceName = piecesPerJuz => (piecesPerJuz === 2 ? 'yarı' : 'çeyrek');
 
 const readingOfPiece = (index, piecesPerJuz) => {
   const {juz, piece, range} = juzPiece (index, piecesPerJuz);
-  return {title: `${juz}. cüz · ${piece}. ${pieceName (piecesPerJuz)}`, subtitle: pagesText (range)};
+  return {title: `${juz}. cüz · ${piece}. ${pieceName (piecesPerJuz)}`, subtitle: pagesText (range), pages: `${range.start}–${range.end}`};
 };
 
-const readingOfJuz = juz => ({title: `${juz}. cüz`, subtitle: pagesText (juzRange (juz))});
+// pages: kâğıt çizelgede "okunacak sayfalar" sütununa yazılan kısa bilgi (1–10 / 12 / 36. Yâsîn)
+const readingOfJuz = juz => ({title: `${juz}. cüz`, subtitle: pagesText (juzRange (juz)), pages: `${juzRange (juz).start}–${juzRange (juz).end}`});
 
 const readingOfSurah = number => {
   const surah = SURAHS[number - 1];
-  return {title: `${surah.number}. ${surah.name} Sûresi`, subtitle: `${surah.ayahs} âyet · ${surah.page}. sayfadan başlar`};
+  return {title: `${surah.number}. ${surah.name} Sûresi`, subtitle: `${surah.ayahs} âyet · ${surah.page}. sayfadan başlar`, pages: `${surah.number}. ${surah.name}`};
 };
 
 const readingOfPage = page => ({
   title: `${page}. sayfa`,
   subtitle: `${juzOfPage (page)}. cüz · ${surahOfPage (page).name} Sûresi`,
+  pages: String (page),
 });
 
 const rotate = (start, step, total) => ((start - 1 + step) % total) + 1;
+
+// ---------- Dönerli 10/5 sayfa planları: çeyrek cüz (5 sayfa) birimiyle ----------
+// Çeyrek q (1..120): cüz = ceil(q/4), cüz içindeki çeyrek = (q-1)%4+1
+const QUARTERS = 120;
+const quarterOf = q => juzPiece (q, 4);
+
+// Bir okumanın başı / sonu: cüz, yarım ya da çeyrek sınırına göre en sade ad
+const startLabel = q => {
+  const {juz, piece} = quarterOf (q);
+  if (piece === 1) return `${juz}. cüz`;
+  if (piece === 3) return `${juz}. cüz 2. yarı`;
+  return `${juz}. cüz ${piece}. çeyrek`;
+};
+const endLabel = q => {
+  const {juz, piece} = quarterOf (q);
+  if (piece === 4) return `${juz}. cüz`;
+  if (piece === 2) return `${juz}. cüz 1. yarı`;
+  return `${juz}. cüz ${piece}. çeyrek`;
+};
+
+// q'dan başlayan "count" çeyrek (ör. 3. cüz 2. yarı – 4. cüz 1. yarı · 51–70. sayfalar)
+const readingOfQuarters = (q, count) => {
+  const lastQ = rotate (q, count - 1, QUARTERS);
+  const first = quarterOf (q);
+  const last = quarterOf (lastQ);
+  let title;
+  if (count === 4 && first.piece === 1) title = `${first.juz}. cüz`;
+  else if (count === 2 && (first.piece === 1 || first.piece === 3)) title = `${first.juz}. cüz · ${(first.piece + 1) / 2}. yarı`;
+  else if (count === 1) title = `${first.juz}. cüz · ${first.piece}. çeyrek`;
+  else if (first.juz === last.juz && count < 4) title = `${first.juz}. cüz · ${first.piece}.–${last.piece}. çeyrek`;
+  else title = `${startLabel (q)} – ${endLabel (lastQ)}`;
+  // 30. cüzden 1. cüze geçiş
+  const wraps = last.range.end < first.range.start;
+  const subtitle = wraps
+    ? `${first.range.start}–${TOTAL_PAGES} ve 1–${last.range.end}. sayfalar`
+    : pagesText ({start: first.range.start, end: last.range.end});
+  const pages = wraps
+    ? `${first.range.start}–${TOTAL_PAGES}, 1–${last.range.end}`
+    : `${first.range.start}–${last.range.end}`;
+  return {title, subtitle, pages};
+};
+
+// Günlük çeyrek sayıları bir hatme (120 çeyrek) yetmezse eksik son iki güne eklenir:
+// ör. Ramazan 29 gün × 20 sayfa = 580 → son iki gün 30'ar sayfa.
+const fillToKhatm = counts => {
+  const out = [...counts];
+  const missing = QUARTERS - out.reduce ((a, b) => a + b, 0);
+  if (missing > 0 && out.length) {
+    out[out.length - 1] += Math.ceil (missing / 2);
+    if (out.length > 1) out[out.length - 2] += Math.floor (missing / 2);
+  }
+  return out;
+};
+
+// Ardışık okumalar: her gün bir öncekinin bittiği yerden devam eder
+const runsFrom = (startQ, counts) => {
+  let q = startQ;
+  return counts.map (count => {
+    const reading = readingOfQuarters (q, count);
+    q = rotate (q, count, QUARTERS);
+    return reading;
+  });
+};
+
+const repeat = (value, times) => Array.from ({length: times}, () => value);
 
 // Sabit planda "step" hep 0'dır: kişi her gün aynı yeri okur
 const advance = (rotating, step) => (rotating ? step : 0);
@@ -64,11 +131,18 @@ export const PLANS = {
     takeText: 'Parçayı al',
     slotLabel: slot => readingOfPiece (slot, 2),
     defaultRotating: true,
-    rotatingText: 'Her gün sıradaki 10 sayfaya geçilir; Ramazan\'da her gün sıradaki cüz.',
+    rotatingText: 'Her gün sıradaki 10 sayfaya geçilir; Recep–Şaban\'da bir hatim biter. Ramazan\'da kalınan yerden devam edilip her gün 20 sayfa (1 cüz) ile ikinci hatim biter. Gün sayısı yetmezse eksik sayfalar son iki güne eklenir.',
     fixedText: 'Recep ve Şaban\'da her gün aynı 10 sayfa, Ramazan\'da her gün o sayfaların cüzü okunur.',
     reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) => {
       if (monthIndex < 2) return readingOfPiece (rotate (slot, advance (rotating, dayInPeriod), 60), 2);
-      return readingOfJuz (rotate (Math.ceil (slot / 2), advance (rotating, dayInPeriod - ramadanStart), 30));
+      return readingOfJuz (Math.ceil (slot / 2));
+    },
+    // Dönerli: Recep+Şaban tam bir hatim (günde 10 sayfa), Ramazan kalınan yerden tam bir hatim (günde 20 sayfa)
+    readings: (slot, {monthDays}) => {
+      const start = 2 * slot - 1;
+      const first = fillToKhatm (repeat (2, monthDays[0] + monthDays[1]));
+      const second = fillToKhatm (repeat (4, monthDays[2]));
+      return runsFrom (start, [...first, ...second]);
     },
   },
 
@@ -82,12 +156,15 @@ export const PLANS = {
     takeText: 'Parçayı al',
     slotLabel: slot => readingOfPiece (slot, 4),
     defaultRotating: true,
-    rotatingText: 'Her gün sıradaki 5 sayfaya geçilir; Ramazan\'da her gün sıradaki 10 sayfa.',
+    rotatingText: 'Her gün sıradaki 5 sayfaya geçilir; Ramazan\'da kalınan yerden devam edilip her gün 10 sayfa okunur ve üç ayda tam bir hatim biter. Gün sayısı yetmezse eksik sayfalar son iki güne eklenir.',
     fixedText: 'Recep ve Şaban\'da her gün aynı 5 sayfa, Ramazan\'da her gün o sayfaları içeren 10 sayfa okunur.',
     reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) => {
       if (monthIndex < 2) return readingOfPiece (rotate (slot, advance (rotating, dayInPeriod), 120), 4);
-      return readingOfPiece (rotate (Math.ceil (slot / 2), advance (rotating, dayInPeriod - ramadanStart), 60), 2);
+      return readingOfPiece (Math.ceil (slot / 2), 2);
     },
+    // Dönerli: üç ay boyunca tek hatim (Recep–Şaban günde 5, Ramazan günde 10 sayfa)
+    readings: (slot, {monthDays}) =>
+      runsFrom (slot, fillToKhatm ([...repeat (1, monthDays[0] + monthDays[1]), ...repeat (2, monthDays[2])])),
   },
 
   samePage: {
@@ -145,6 +222,8 @@ export const buildSchedule = (planId, slot, period, rotating) => {
   const plan = PLANS[planId];
   const turns = isRotating (planId, rotating);
   const ramadanStart = period.monthDays[0] + period.monthDays[1];
+  // Dönerli 10/5 sayfa planlarında günler birbirine bağlıdır (kalınan yerden devam, eksik son günlere)
+  const series = turns && plan.readings ? plan.readings (Number (slot), period) : null;
   const days = [];
   let dayInPeriod = 0;
   const today = new Date ();
@@ -160,7 +239,7 @@ export const buildSchedule = (planId, slot, period, rotating) => {
         dayInMonth: dayInMonth + 1,
         date,
         isToday: sameDay (date, today),
-        ...plan.reading (Number (slot), monthIndex, dayInMonth, dayInPeriod, ramadanStart, turns),
+        ...(series ? series[dayInPeriod] : plan.reading (Number (slot), monthIndex, dayInMonth, dayInPeriod, ramadanStart, turns)),
       });
     }
   });

@@ -133,7 +133,9 @@ export const Legend = styled.div`
 
 const legendColors = {
     free: 'background: #fff; border: 1.5px dashed #c9bfa9;',
-    taken: 'background: var(--emerald-100); border: 1.5px solid var(--emerald-200);',
+    taken: 'background: var(--emerald-500); border: 1.5px solid var(--emerald-500);',
+    // Okuma takibi olmayan hatimde alınan cüz doğrudan koyu
+    takenDark: 'background: var(--emerald-700); border: 1.5px solid var(--emerald-700);',
     read: 'background: var(--emerald-700); border: 1.5px solid var(--emerald-700);',
 };
 
@@ -210,16 +212,18 @@ export const RespondInnerContainer = styled.div`
     }
 `;
 
-const tileTheme = ({taken, read}) => {
-    if (read) return `
+// Alınan cüz belirgin olsun: okuma takibi (tracked) yoksa alınır alınmaz koyu ("okundu" rengi);
+// takip varsa önce koyuya yakın, okununca tam koyu
+const tileTheme = ({taken, read, tracked = true}) => {
+    if (read || (taken && !tracked)) return `
         background: var(--emerald-700);
         border: 1.5px solid var(--emerald-700);
         color: #fff;
     `;
     if (taken) return `
-        background: var(--emerald-50);
-        border: 1.5px solid var(--emerald-200);
-        color: var(--ink);
+        background: var(--emerald-500);
+        border: 1.5px solid var(--emerald-500);
+        color: #fff;
     `;
     return `
         background: var(--surface);

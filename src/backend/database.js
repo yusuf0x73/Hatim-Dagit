@@ -38,7 +38,8 @@ export class Database {
     description = '',
     makeNewHatim = false,
     hatimCount = 1,
-    isMonths3 = {eachday1part: false}
+    isMonths3 = {eachday1part: false},
+    okumaTakibi
   ) => {
     return await this.api.yeniHatim (
       baslik,
@@ -48,7 +49,8 @@ export class Database {
       description,
       makeNewHatim,
       hatimCount,
-      isMonths3
+      isMonths3,
+      okumaTakibi
     );
   };
 

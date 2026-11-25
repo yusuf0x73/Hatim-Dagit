@@ -122,6 +122,8 @@ let english = {
     ReadQuranAll: "Read the Holy Quran",
     ReadQuranSub: "Diyanet mushaf · continue where you left off",
     ReadQuran: "Read in the Quran",
+    ReadTrackingOption: 'Show "Reading / Read" under each part',
+    ReadTrackingHint: 'Whoever takes a part marks it "Read" when done; everyone sees it.',
     Share: 'Share',
     ShareTitle: 'Share the khatm',
     Whatsapp: 'WhatsApp',

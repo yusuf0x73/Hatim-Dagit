@@ -23,7 +23,7 @@ import {
 import {SecondaryButton} from 'components/khatmKit/styles';
 import {
   Page, Wrap, SectionTitle, Toolbar, SearchInput, FilterRow, FilterChip, LuckyButton,
-  GroupList, Group, GroupHead, GroupNo, GroupInfo, GroupTitle, MiniBar, TileGrid, Tile, Row, RowStatus, ListCard, Empty,
+  GroupList, Group, GroupHead, GroupNo, GroupInfo, GroupTitle, MiniBar, TileGrid, Tile, Row, RowStatus, ListCard, Empty, MineTag,
 } from 'components/ucaylar/styles';
 
 const ROOT_FIELDS = ['type', 'version', 'adminToken', 'header', 'description', 'startingDate', 'duaDate', 'unit', 'makeNewHatim', 'delete'];
@@ -239,8 +239,9 @@ const OzelPage = () => {
     const p = khatm.parts[no] || {};
     const own = isMine (khatm.subKey, no);
     return (
-      <Tile key={no} type="button" taken={p.isTaken} mine={own} read={p.isTaken && isRead (khatm, no)}
+      <Tile key={no} type="button" taken={p.isTaken} mine={own} read={p.isTaken && isRead (khatm, no)} tracked
             data-sub={khatm.subKey} data-part={no} onClick={() => openPart (khatm, no)}>
+        {own && <MineTag>{Language.CuzGrid.Mine}</MineTag>}
         <strong>{unit.tile (no)}</strong>
         <span>{p.isTaken ? p.name || '—' : Language.CuzGrid.Available}</span>
         {p.isTaken && <ReactionChips charts={khatm.charts} no={no} />}
@@ -262,7 +263,7 @@ const OzelPage = () => {
               <Row key={no} type="button" mine={own} data-sub={khatm.subKey} data-part={no} onClick={() => openPart (khatm, no)}>
                 <GroupNo>{no}</GroupNo>
                 <GroupInfo>
-                  <strong>{unit.tile (no)}</strong>
+                  <strong>{unit.tile (no)}{own && <MineTag inline>{Language.CuzGrid.Mine}</MineTag>}</strong>
                   <small style={{color: 'var(--muted)', fontWeight: 700}}>{unit.sub (no)}</small>
                 </GroupInfo>
                 <RowStatus taken={p.isTaken}>

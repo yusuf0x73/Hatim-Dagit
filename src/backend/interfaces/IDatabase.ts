@@ -20,7 +20,7 @@ export interface IDatabase{
     
     yeniHatim(baslik:string, bitisTarihi:string, mevcutHatim:boolean,
          isRamazan:boolean, description:string, makeNewHatim:boolean, hatimCount:number,
-          isMonths3: {eachday1part: boolean}):Promise<BaseResponse<string>>;
+          isMonths3: {eachday1part: boolean}, okumaTakibi?: boolean):Promise<BaseResponse<string>>;
 
     yeniYillikHatim(args:YeniYillikHatimParams):Promise<BaseResponse<YeniYillikHatimResponse>>;
     

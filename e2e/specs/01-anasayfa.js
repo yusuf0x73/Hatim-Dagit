@@ -21,17 +21,31 @@ module.exports = ({test}) => {
     assert.ok (info.image.includes ('gradient'), 'kartın ortak zemini olmalı');
   });
 
-  test ('3 aylar planlarında "sabit" işaretli gelir', async ({user}) => {
+  test ('3 aylar: 10/5 sayfa planları "dönerli", sayfa/sûre planları "sabit" işaretli gelir', async ({user}) => {
     const a = await user ();
     await a.goto ('/');
     await a.click ('#months3');
-    for (const plan of ['tenPagesThenJuz', 'samePage']) {
+    for (const [plan, selected] of [['tenPagesThenJuz', '#rotating'], ['fivePagesThenTenPages', '#rotating'], ['samePage', '#fixed'], ['sameSurah', '#fixed']]) {
       await a.click (`#${plan}`);
-      await a.page.waitForSelector ('#fixed');
-      assert.equal (await a.page.$eval ('#fixed', el => el.getAttribute ('aria-checked')), 'true', `${plan}: sabit seçili değil`);
-      assert.equal (await a.page.$eval ('#rotating', el => el.getAttribute ('aria-checked')), 'false');
+      await a.page.waitForSelector (selected);
+      const other = selected === '#rotating' ? '#fixed' : '#rotating';
+      assert.equal (await a.page.$eval (selected, el => el.getAttribute ('aria-checked')), 'true', `${plan}: ${selected} seçili değil`);
+      assert.equal (await a.page.$eval (other, el => el.getAttribute ('aria-checked')), 'false');
       await a.click ('Diğer seçenekler');
     }
+  });
+
+  test ('ilk girişte üç aylar tanıtımı bir kez çıkar, "oluştur" planları açar', async ({user}) => {
+    const a = await user ({months3Intro: true});
+    await a.goto ('/');
+    await a.page.waitForSelector ('#months3IntroTitle', {visible: true, timeout: 15000});
+    await a.waitText ('Dönerli okuma, tam hatim');
+    await a.click ('#months3IntroCreate');
+    await a.page.waitForSelector ('#tenPagesThenJuz', {visible: true});
+    await a.goto ('/');
+    await a.page.waitForSelector ('#newKhatm');
+    await new Promise (resolve => setTimeout (resolve, 1500));
+    assert.equal (await a.page.$ ('#months3IntroTitle'), null, 'ikinci girişte yine çıktı');
   });
 
   test ('ziyaret sayacı aynı anda açılan sayfaları kaybetmez', async ({user}) => {

@@ -11,10 +11,11 @@ const cevap = (hatim, subKey, no) => {
   return hatim[subKey][sira].cevaplar[no - (sira - 1) * 10 - 1];
 };
 
-const createQuick = async a => {
+const createQuick = async (a, {readTracking = false} = {}) => {
   await a.goto ('/');
   await a.click ('#newKhatm');
   await a.type (TITLE_INPUT, 'E2E hızlı hatim');
+  if (readTracking) await a.click ('#readTrackingOption');
   await a.click ('Devam Et', {exact: true});
   const {key} = await a.createdKey ();
   const hatim = await dbGet (`hatim/${key}`);
@@ -29,7 +30,39 @@ const takePart = async (u, no, name) => {
   await u.waitSheetClosed ();
 };
 
+// Cüz kutusunun zemin rengi (data-part'ın kapsayıcısı)
+const tileColor = (u, no) => u.page.$eval (`[data-part="${no}"]`, el => getComputedStyle (el.parentElement).backgroundColor);
+const EMERALD_700 = 'rgb(17, 98, 74)';
+const EMERALD_500 = 'rgb(30, 148, 112)';
+
 module.exports = ({test}) => {
+  test ('okuma takibi: varsayılan kapalı (alınan cüz koyu, şerit yok); seçilirse "Okunuyor" şeridi ve açık ton', async ({user}) => {
+    const a = await user ();
+    const off = await createQuick (a);
+    assert.equal (await dbGet (`hatim/${off.key}/okumaTakibi`), false, 'varsayılan kapalı kaydedilmeli');
+    await a.page.keyboard.press ('Escape');
+    await a.goto (`/cuz/${off.key}`);
+    await takePart (a, 5, 'Ayşe');
+    await a.waitPart (5, 'Ayşe');
+    assert.equal (await tileColor (a, 5), EMERALD_700, 'takip yokken alınan cüz koyu olmalı');
+    assert.ok (!(await a.page.$eval ('[data-part="5"]', el => el.parentElement.innerText)).includes ('Okunuyor'));
+    assert.ok (!(await a.text ()).includes ('şeridine dokunup'), 'takip yokken şerit ipucu çıkmamalı');
+    await a.page.$eval ('[data-part="5"]', el => el.scrollIntoView ({block: 'center'}));
+    await a.page.screenshot ({path: require ('path').join (__dirname, '..', 'out', 'hizli-takip-kapali.png')});
+
+    const b = await user ();
+    const on = await createQuick (b, {readTracking: true});
+    assert.equal (await dbGet (`hatim/${on.key}/okumaTakibi`), true);
+    await b.page.keyboard.press ('Escape');
+    await b.goto (`/cuz/${on.key}`);
+    await takePart (b, 7, 'Zeynep');
+    await b.waitPart (7, 'Zeynep');
+    assert.ok ((await b.page.$eval ('[data-part="7"]', el => el.parentElement.innerText)).includes ('Okunuyor'));
+    assert.equal (await tileColor (b, 7), EMERALD_500, 'takip varken alınan cüz koyuya yakın olmalı');
+    await b.page.$eval ('[data-part="7"]', el => el.scrollIntoView ({block: 'center'}));
+    await b.page.screenshot ({path: require ('path').join (__dirname, '..', 'out', 'hizli-takip-acik.png')});
+  });
+
   test ('hatim oluşturulur, cüz alınır, ismi değiştirilir ve bırakılır', async ({user}) => {
     const a = await user ();
     const {key, subKey} = await createQuick (a);

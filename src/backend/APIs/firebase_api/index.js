@@ -130,12 +130,13 @@ class FirebaseAPI{
       try {
         let hatimKey = this.extractKey();
         // Birbirinden bağımsız okumalar sırayla değil aynı anda yapılır
-        let [activeSubKhatmKeySnapshot, makeNewHatim, adminToken, deleteProp, khatmSubKeys] = await Promise.all([
+        let [activeSubKhatmKeySnapshot, makeNewHatim, adminToken, deleteProp, khatmSubKeys, okumaTakibi] = await Promise.all([
           this.db.ref( `hatim/${hatimKey}/activeSubKhatmKey` ).get(),
           this.db.ref( `hatim/${hatimKey}/makeNewHatim` ).get(),
           this.db.ref( `hatim/${hatimKey}/adminToken` ).get(),
           this.db.ref( `hatim/${hatimKey}/delete` ).get(),
           this.db.ref( `hatim/${hatimKey}/khatmSubKeys` ).get(),
+          this.db.ref( `hatim/${hatimKey}/okumaTakibi` ).get(),
         ]);
         let activeSubKhatmKey = activeSubKhatmKeySnapshot.val();
 
@@ -197,7 +198,9 @@ class FirebaseAPI{
           }
         }
 
-        data = {...data, subKey: activeSubKhatmKey, activeSubKhatmKey: khatmSubKeysArr[activeSubKhatmKeyIndex], makeNewHatim: makeNewHatim.val(), adminToken: adminToken.val(), delete: deleteProp.val(), khatmSubKeys: khatmSubKeys.val()};
+        data = {...data, subKey: activeSubKhatmKey, activeSubKhatmKey: khatmSubKeysArr[activeSubKhatmKeyIndex], makeNewHatim: makeNewHatim.val(), adminToken: adminToken.val(), delete: deleteProp.val(), khatmSubKeys: khatmSubKeys.val(),
+                // "Okunuyor / Okundu" şeridi: yeni hatimlerde oluşturan seçer; alanı olmayan eski hatimlerde açık kalır
+                okumaTakibi: okumaTakibi.val()};
 
 
         return {data: data, error: undefined};
@@ -233,7 +236,7 @@ class FirebaseAPI{
       return baslik.val();
     }
   
-    yeniHatim = async (baslik, bitisTarihi, mevcutHatim = false, isRamazan = false, description = "", makeNewHatim = false, hatimCount, isMonths3) => {
+    yeniHatim = async (baslik, bitisTarihi, mevcutHatim = false, isRamazan = false, description = "", makeNewHatim = false, hatimCount, isMonths3, okumaTakibi) => {
       let newDataFormat = {...dataFormat}
       newDataFormat.baslik = baslik;
       newDataFormat.bitisTarihi = bitisTarihi;
@@ -252,6 +255,8 @@ class FirebaseAPI{
         await this.db.ref(`hatim/${hatimKey}/adminToken`).set(adminToken)
         await this.db.ref(`hatim/${hatimKey}/makeNewHatim`).set(makeNewHatim)
         await this.db.ref(`hatim/${hatimKey}/totalReadParts`).set(0)
+        // Hızlı hatimde "Okunuyor / Okundu" takibi (varsayılan kapalı)
+        if(okumaTakibi !== undefined) await this.db.ref(`hatim/${hatimKey}/okumaTakibi`).set(!!okumaTakibi)
 
       }else{
         hatimKey = this.extractKey();

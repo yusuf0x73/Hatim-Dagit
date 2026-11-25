@@ -34,7 +34,8 @@ const dbGet = async path => {
  * Bir "cihaz": kendi gizli penceresi ve localStorage'ı olan telefon boyutlu tarayıcı.
  * lang: arayüz dili, countVisit: ziyaret sayacını artırsın mı (varsayılan hayır)
  */
-const createUser = async (browser, {lang = 'tr', countVisit = false, viewport, userAgent} = {}) => {
+// months3Intro: ana sayfadaki üç aylar tanıtımı açılsın mı (varsayılan kapalı; diğer testleri örtmesin)
+const createUser = async (browser, {lang = 'tr', countVisit = false, viewport, userAgent, months3Intro = false} = {}) => {
   const context = await browser.createIncognitoBrowserContext ();
   const page = await context.newPage ();
   const logs = [];
@@ -42,14 +43,15 @@ const createUser = async (browser, {lang = 'tr', countVisit = false, viewport, u
 
   if (userAgent) await page.setUserAgent (userAgent);
   await page.setViewport (viewport || {width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true});
-  await page.evaluateOnNewDocument ((lang, countVisit) => {
+  await page.evaluateOnNewDocument ((lang, countVisit, introOn) => {
     if (localStorage.getItem ('__e2eInit')) return;
     localStorage.setItem ('__e2eInit', '1');
     if (!countVisit) localStorage.setItem ('user', 'test');
     localStorage.setItem ('language', lang);
     localStorage.setItem ('hd.playBannerClosed', '1');
+    if (!introOn) localStorage.setItem ('hd.months3Intro.off', '1');
     localStorage.setItem ('LocalDb', JSON.stringify ({cookieStuff: {cookieBannerAccepted: true}}));
-  }, lang, countVisit);
+  }, lang, countVisit, months3Intro);
 
   page.on ('pageerror', error => logs.push (`PAGEERROR ${error.message.slice (0, 200)}`));
   page.on ('console', message => {

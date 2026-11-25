@@ -1,7 +1,7 @@
 //                                     BİSMİLLAHİRRAHMANİRRAHİM
 
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {X, HandClick, CalendarEvent, Check} from 'tabler-icons-react';
+import {X, HandClick, CalendarEvent, Check, Printer} from 'tabler-icons-react';
 import {showNotification} from '@mantine/notifications';
 import {DatabaseContext} from 'backend';
 import {extractKey} from 'common';
@@ -9,18 +9,21 @@ import {PLANS, MONTH_GENITIVE, buildSchedule, isRotating, todayIndex, periodEndD
 import {SURAHS, juzRange} from 'plans/quran';
 import {listKhatms, rememberPart, forgetPart, getTicks} from 'localStorage/myKhatms';
 import LanguageData from 'strings';
-import {ShareActions, ChartSheet, chartStore, useLiveKhatm, KhatmStatus, hasSecret, failMessage, takeFailMessage, isLocalAdmin, ReactionChips, ReactionPicker} from 'components/khatmKit';
+import {ShareActions, ChartSheet, chartStore, useLiveKhatm, KhatmStatus, hasSecret, failMessage, takeFailMessage, isLocalAdmin, ReactionChips, ReactionPicker, ReadQuranBanner} from 'components/khatmKit';
+import PrintSheets from './PrintSheets';
 import {
   Page, Wrap, HeroCard, HeroHead, PlanChip, HeroTitle, HeroText, HeroBody, StatRow, StatLabel, StatValue, Bar,
   Badges, Badge, SectionTitle, TodayCard, TodayBody, TodayKicker, TodayTitle, TodaySub, SmallButton, Toolbar,
   SearchInput, FilterRow, FilterChip, LuckyButton, GroupList, Group, GroupHead, GroupNo, GroupInfo, GroupTitle,
   MiniBar, TileGrid, Tile, Row, RowStatus, ListCard, Empty, Sheet, SheetClose, SheetTitle, SheetSub, InfoBox,
-  NameInput, ActionButton, GhostButton, ErrorText,
+  NameInput, ActionButton, GhostButton, ErrorText, MineTag, MineLine,
 } from './styles';
 
 // Türkçe karakterleri sadeleştirerek arama ("yasin" -> "Yâsîn")
 const normalize = text =>
   text.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[̀-ͯ']/g, '').replace(/ı/g, 'i');
+
+const PLURAL_ACC = {parça: 'parçaları', sayfa: 'sayfaları', 'sûre': 'sûreleri'};
 
 const formatLong = date => date.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'});
 
@@ -83,6 +86,7 @@ const UcAylar = () => {
   const [actionError, setActionError] = useState('');
 
   const [chartSlot, setChartSlot] = useState(null);
+  const [printing, setPrinting] = useState(false);
   const [mineVersion, setMineVersion] = useState(0);
 
   const plan = khatm ? PLANS[khatm.plan] : null;
@@ -105,6 +109,14 @@ const UcAylar = () => {
   const ended = dayIndex == null && daysToStart <= 0;
 
   const isTaken = no => parts[no] && parts[no].isTaken;
+  // Okunan günler canlı veriden; bağlantı yoksa son yerel kopya
+  // charts/<no> hem dizi hem nesne gelebilir
+  const doneDaysOf = (charts, no) => {
+    const value = charts && charts[no];
+    if (!value || typeof value !== 'object') return [];
+    return Object.keys(value).filter(day => value[day] === true).map(Number);
+  };
+  const doneDays = no => (khatm.charts ? doneDaysOf(khatm.charts, no) : getTicks(key, no));
   const isMine = no => mySlots.includes(String(no));
   const passesFilter = no =>
     filter === 'all' || (filter === 'free' && !isTaken(no)) || (filter === 'mine' && isMine(no));
@@ -187,8 +199,8 @@ const UcAylar = () => {
   const canClaim = isAdmin || hasSecret({hatimKey: key, subKey: khatm.subKey});
 
   // "Okudum": çizelgeye çevrimiçi işlenir, hatimdeki herkes görür
-  const markToday = async (no, value) => {
-    const ok = await chartStore({hatimKey: key, subKey: khatm.subKey, partNo: no}).save(dayIndex, value);
+  const markDay = async (no, day, value) => {
+    const ok = await chartStore({hatimKey: key, subKey: khatm.subKey, partNo: no}).save(day, value);
     if (!ok) showNotification({color: 'red', message: LanguageData.Kit.ChartSaveFailed});
     setMineVersion(v => v + 1);
   };
@@ -219,6 +231,7 @@ const UcAylar = () => {
     return (
       <Tile key={no} taken={part.isTaken} mine={isMine(no)} highlight={highlight === String(no)}
             data-part={no} onClick={() => openSlot(no)}>
+        {isMine(no) && <MineTag>{LanguageData.CuzGrid.Mine}</MineTag>}
         <strong>{label}</strong>
         <span>{part.isTaken ? part.name || '—' : 'Boş'}</span>
         {part.isTaken && <ReactionChips charts={khatm.charts} no={no} />}
@@ -278,7 +291,7 @@ const UcAylar = () => {
             <Row key={surah.number} mine={isMine(surah.number)} data-part={surah.number} onClick={() => openSlot(surah.number)}>
               <GroupNo>{surah.number}</GroupNo>
               <GroupInfo>
-                <strong>{surah.name}</strong>
+                <strong>{surah.name}{isMine(surah.number) && <MineTag inline>{LanguageData.CuzGrid.Mine}</MineTag>}</strong>
                 <small style={{color: 'var(--muted)', fontWeight: 700}}>{surah.ayahs} âyet · {surah.page}. sayfa</small>
               </GroupInfo>
               <RowStatus taken={part.isTaken}>
@@ -323,6 +336,19 @@ const UcAylar = () => {
                   : ended ? 'Üç aylar tamamlandı' : `Üç aylara ${daysToStart} gün var`}
               </Badge>
             </Badges>
+            {mySlots.length > 0 &&
+              <MineLine id="mineLine">
+                <span>{mySlots.length > 1 ? `Şu ${PLURAL_ACC[plan.unit] || 'parçaları'} aldınız:` : `Şu ${plan.unitAcc || 'parçayı'} aldınız:`}</span>
+                {mySlots.map(no => (
+                  <button key={no} type="button" onClick={() => {
+                    const card = document.querySelector(`[data-mine="${no}"]`);
+                    if (card) card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                  }}>{plan.slotLabel(no).title}</button>
+                ))}
+              </MineLine>}
+            <GhostButton id="printButton" style={{marginTop: 14}} onClick={() => setPrinting(true)}>
+              <Printer size={20} /> Çizelgeleri yazdır (Recep, Şaban, Ramazan)
+            </GhostButton>
           </HeroBody>
         </HeroCard>
 
@@ -330,7 +356,8 @@ const UcAylar = () => {
           <SectionTitle>{dayIndex != null ? 'Bugün okuyacaklarım' : 'Aldıklarım'}</SectionTitle>
           {mySlots.map(no => {
             const today = reading(no);
-            const done = dayIndex != null && getTicks(key, no).includes(dayIndex);
+            const days = doneDays(no);
+            const done = dayIndex != null && days.includes(dayIndex);
             return (
               <TodayCard key={no} done={done} data-mine={no} style={{cursor: 'pointer'}} onClick={() => setChartSlot(no)}>
                 <TodayBody>
@@ -339,7 +366,7 @@ const UcAylar = () => {
                   <TodaySub>{dayIndex != null ? today.subtitle : `İlk gün (${formatDate(today.date)}): ${today.subtitle}`}</TodaySub>
                 </TodayBody>
                 {dayIndex != null &&
-                  <SmallButton filled={done} onClick={event => { event.stopPropagation(); markToday(no, !done); }}>
+                  <SmallButton filled={done} onClick={event => { event.stopPropagation(); markDay(no, dayIndex, !done); }}>
                     <Check size={18} /> {done ? 'Okundu' : 'Okudum'}
                   </SmallButton>}
                 <SmallButton aria-label='Çizelge' onClick={event => { event.stopPropagation(); setChartSlot(no); }}>
@@ -428,7 +455,9 @@ const UcAylar = () => {
                     <ReactionPicker hatimKey={key} subKey={khatm.subKey} no={chartSlot} charts={khatm.charts} />}
                   load={() => chartData.load()} save={(day, value) => chartData.save(day, value)} />
 
+      <ReadQuranBanner />
       <ShareActions title={khatm.header || plan.title} />
+      {printing && <PrintSheets khatm={khatm} plan={plan} onDone={() => setPrinting(false)} />}
     </Page>
   );
 };

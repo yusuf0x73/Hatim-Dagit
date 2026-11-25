@@ -33,6 +33,8 @@ const AskDialog = ({
   hatimCount,
 }) => {
   const [makeNewHatim, setMakeNewHatim] = useState (false);
+  // "Okunuyor / Okundu" şeridi: varsayılan kapalı, isteyen işaretler (yalnızca hızlı hatim)
+  const [okumaTakibi, setOkumaTakibi] = useState (false);
 
   return (
     <DialogBox visibility={askDialogBox}>
@@ -116,6 +118,19 @@ const AskDialog = ({
           />
         </div>
 
+        {!isRamazan &&
+          <div style={{display: 'flex', flexDirection: 'column', marginTop: '4px'}}>
+            <Checkbox
+              id="readTrackingOption"
+              size="md"
+              styles={{label: {fontSize: '0.95rem', lineHeight: 1.4}, description: {fontSize: '0.82rem'}}}
+              checked={okumaTakibi}
+              onChange={event => setOkumaTakibi (event.currentTarget.checked)}
+              label={Language.Kit.ReadTrackingOption}
+              description={Language.Kit.ReadTrackingHint}
+            />
+          </div>}
+
       </DialogContainer>
 
 <PrimaryButton
@@ -135,8 +150,11 @@ const AskDialog = ({
         isRamazan,
         hatimDescription,
         makeNewHatim,
-        hatimCount
+        hatimCount,
+        undefined,
+        isRamazan ? undefined : okumaTakibi
       );
+      setOkumaTakibi (false);
       setHatimKey (_hatimKey);
       const route = isRamazan ? 'ramazan' : 'cuz';
       setYazilar ({

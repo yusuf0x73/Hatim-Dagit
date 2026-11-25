@@ -124,6 +124,8 @@ let Arabic = {
     ReadQuranAll: "اقرأ القرآن الكريم",
     ReadQuranSub: "مصحف الديانة · تابع من حيث توقفت",
     ReadQuran: "اقرأ من المصحف",
+    ReadTrackingOption: 'إظهار "يُقرأ / قُرئ" تحت كل جزء',
+    ReadTrackingHint: 'من يأخذ الجزء يضع علامة "قرأت" عند الانتهاء؛ ويراها الجميع.',
     Share: 'مشاركة',
     ShareTitle: 'شارك الختمة',
     Whatsapp: 'واتساب',

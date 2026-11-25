@@ -10,7 +10,7 @@ const normalizeLanguage = value => {
 };
 
 /**
- * Seçilmiş dil > cihazın dil listesi > İngilizce.
+ * Seçilmiş dil > cihazın dil listesi (tr / en / ar) > Türkçe.
  * Eskiden sadece "en", "en-US", "tr" gibi tam eşleşmeler tanınıyordu; "en-GB", "ar-AE" vb. Türkçe açılıyordu.
  */
 const detectLanguage = () => {
@@ -30,7 +30,7 @@ const detectLanguage = () => {
     const code = normalizeLanguage (language);
     if (code) return code;
   }
-  return 'en';
+  return 'tr';
 };
 
 const setLanguage = lang => localStorage.setItem ('language', lang);

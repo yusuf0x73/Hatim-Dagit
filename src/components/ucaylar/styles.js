@@ -326,9 +326,18 @@ export const Tile = styled.button`
     border-radius: 12px;
     text-align: center;
     cursor: pointer;
-    border: 1.5px ${({taken}) => (taken ? 'solid var(--emerald-200)' : 'dashed #c9bfa9')};
-    background: ${({taken}) => (taken ? 'var(--emerald-50)' : 'var(--surface)')};
-    color: var(--ink);
+    border: 1.5px ${({taken}) => (taken ? 'solid var(--emerald-500)' : 'dashed #c9bfa9')};
+    background: ${({taken}) => (taken ? 'var(--emerald-500)' : 'var(--surface)')};
+    color: ${({taken}) => (taken ? '#fff' : 'var(--ink)')};
+
+    /* Alınan kutu belirgin: okuma takibi (tracked) yoksa hemen koyu, varsa önce koyuya yakın */
+    ${({taken, read, tracked}) => taken && !read && !tracked && `
+        background: var(--emerald-700);
+        border-color: var(--emerald-700);
+    `}
+    ${({taken}) => taken && `
+        span{ color: rgba(255,255,255,0.88) !important; }
+    `}
     box-shadow: ${({mine}) => (mine ? '0 0 0 2.5px var(--gold-500)' : 'none')};
     outline: ${({highlight}) => (highlight ? '3px solid var(--emerald-500)' : 'none')};
     outline-offset: 2px;
@@ -369,6 +378,7 @@ export const Row = styled.button`
     border: 0;
     border-bottom: 1px solid var(--line);
     background: ${({mine}) => (mine ? 'var(--gold-100)' : 'transparent')};
+    box-shadow: ${({mine}) => (mine ? 'inset 4px 0 0 var(--gold-500)' : 'none')};
     color: var(--ink);
     text-align: start;
     cursor: pointer;
@@ -537,5 +547,57 @@ export const DayInfo = styled.span`
     strong{
         font-weight: 800;
         text-decoration: ${({done}) => (done ? 'line-through' : 'none')};
+    }
+`;
+
+/* ---------- "Sizin" işareti ---------- */
+
+// Kutuda sağ üst köşede; satırda (inline) ismin yanında
+export const MineTag = styled.em`
+    ${({inline}) => (inline ? `
+        display: inline-block;
+        margin-inline-start: 8px;
+        vertical-align: middle;
+    ` : `
+        position: absolute;
+        top: 3px;
+        right: 3px;
+    `)}
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--gold-500);
+    color: var(--emerald-900);
+    font-size: 0.66rem;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+`;
+
+export const MineLine = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+
+    > span {
+        width: 100%;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    button {
+        padding: 5px 12px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--gold-500);
+        color: var(--emerald-900);
+        font-size: 0.88rem;
+        font-weight: 800;
+        cursor: pointer;
     }
 `;
