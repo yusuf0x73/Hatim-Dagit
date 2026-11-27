@@ -17,7 +17,7 @@ import Language from 'strings';
 import {extractKey, getMonths3Date, initializeLocalStorage, removeAll, removeAll_v1} from 'common';
 import {partsProcessor} from 'localStorage/parts';
 import {rememberPart, forgetPart, rememberTitle, hideKhatm, getTicks, setTicks} from 'localStorage/myKhatms';
-import {buildSchedule, formatDate, MONTH_NAMES} from 'plans';
+import {buildSchedule, formatDate, MONTH_NAMES, juzPerDay} from 'plans';
 import {juzRange} from 'plans/quran';
 import {
   QuestionContainer, CardWrapper, GridToolbar, Legend, LegendItem, GridHint,
@@ -128,13 +128,15 @@ const ramazanSchedule = no => {
   const [recep, saban, ramazan] = period.monthDays;
   const first = addDays (toLocalDate (period.startingDate), recep + saban - 1);
   const today = new Date ().toDateString ();
-  return Array.from ({length: Math.max (ramazan, 30)}, (_, i) => {
+  // Ramazan 29 gün çekerse son gün iki cüz: hatim yine tamamlanır
+  return juzPerDay (Number (no), ramazan).map ((reading, i) => {
     const date = addDays (first, i);
     return {
       index: i,
       group: MONTH_NAMES[2],
       label: `${fmt (Language.Kit.Day, {n: i + 1})} · ${formatDate (date)}`,
-      title: juzLabel (((Number (no) - 1 + i) % 30) + 1),
+      title: reading.title,
+      subtitle: reading.subtitle,
       isToday: date.toDateString () === today,
     };
   });

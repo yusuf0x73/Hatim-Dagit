@@ -10,7 +10,7 @@ import {SURAHS, juzRange, juzLabel, ayahsLabel, pageLabel} from 'plans/quran';
 import {tx, LOCALE} from 'strings/tx';
 import {listKhatms, rememberPart, forgetPart, getTicks} from 'localStorage/myKhatms';
 import LanguageData from 'strings';
-import {ShareActions, ChartSheet, chartStore, useLiveKhatm, KhatmStatus, hasSecret, failMessage, takeFailMessage, isLocalAdmin, ReactionChips, ReactionPicker, ReadQuranBanner} from 'components/khatmKit';
+import {fmt, ShareActions, ChartSheet, chartStore, useLiveKhatm, KhatmStatus, hasSecret, failMessage, takeFailMessage, isLocalAdmin, ReactionChips, ReactionPicker, ReadQuranBanner} from 'components/khatmKit';
 import PrintSheets from './PrintSheets';
 import {
   Page, Wrap, HeroCard, HeroHead, PlanChip, HeroTitle, HeroText, HeroBody, StatRow, StatLabel, StatValue, Bar,
@@ -56,22 +56,44 @@ const UcAylar = () => {
 
   // Hatim canlı dinlenir: biri parça aldığında sayfa kendiliğinden güncellenir
   const live = useLiveKhatm(key);
-  const khatm = useMemo(() => {
+  // Hatim dolunca (otomatik) yeni alt hatim açılabilir: hepsi sırayla (push anahtarları zamana göre sıralanır)
+  const base = useMemo(() => {
     const data = live.data;
-    if (!data) return null;
-    const subKey = Object.keys(data).find(k => data[k] && typeof data[k] === 'object' && data[k].parts);
-    if (!subKey || !PLANS[data.plan]) return null;
+    if (!data || !PLANS[data.plan]) return null;
+    const subKeys = Object.keys(data).filter(k => data[k] && typeof data[k] === 'object' && data[k].parts).sort();
+    if (subKeys.length === 0) return null;
+    const khatms = {};
+    subKeys.forEach(k => { khatms[k] = {parts: normalizeParts(data[k].parts), charts: data[k].charts}; });
     return {
       header: data.header,
       description: data.description,
       plan: data.plan,
       rotating: data.rotating,
+      makeNewHatim: !!data.makeNewHatim,
       period: {startingDate: data.startingDate, monthDays: data.monthDays},
-      subKey,
-      parts: normalizeParts(data[subKey].parts),
-      charts: data[subKey].charts,
+      subKeys,
+      khatms,
     };
   }, [live.data]);
+
+  const [activeSub, setActiveSub] = useState(null);
+  const [mineVersion, setMineVersion] = useState(0);
+
+  // Bu cihazda alınan parçalar (bütün alt hatimlerde)
+  const myParts = useMemo(() => {
+    const entry = listKhatms().find(e => e.key === key);
+    return entry && base ? entry.parts.filter(p => base.khatms[p.subKey]).map(p => ({subKey: p.subKey, no: String(p.no)})) : [];
+  }, [base, mineVersion]);
+
+  // Gösterilen hatim: seçilen; yoksa parçanızın olduğu son hatim, yoksa ilk dolmamış hatim
+  const khatm = useMemo(() => {
+    if (!base) return null;
+    const full = k => Object.values(base.khatms[k].parts).every(p => p.isTaken);
+    const mine = [...base.subKeys].reverse().find(k => myParts.some(p => p.subKey === k));
+    const subKey = (activeSub && base.khatms[activeSub] ? activeSub : null) || mine ||
+      base.subKeys.find(k => !full(k)) || base.subKeys[base.subKeys.length - 1];
+    return {...base, subKey, index: base.subKeys.indexOf(subKey), parts: base.khatms[subKey].parts, charts: base.khatms[subKey].charts};
+  }, [base, activeSub, myParts]);
   const status = live.status === 'ready' && !khatm ? 'missing' : live.status;
 
   const [filter, setFilter] = useState('all');
@@ -86,14 +108,10 @@ const UcAylar = () => {
 
   const [chartSlot, setChartSlot] = useState(null);
   const [printing, setPrinting] = useState(false);
-  const [mineVersion, setMineVersion] = useState(0);
 
   const plan = khatm ? PLANS[khatm.plan] : null;
 
-  const mySlots = useMemo(() => {
-    const entry = listKhatms().find(e => e.key === key);
-    return entry && khatm ? entry.parts.filter(p => p.subKey === khatm.subKey).map(p => String(p.no)) : [];
-  }, [khatm, mineVersion]);
+  const mySlots = useMemo(() => (khatm ? myParts.filter(p => p.subKey === khatm.subKey).map(p => p.no) : []), [khatm, myParts]);
 
   if (status !== 'ready') {
     return <Page><KhatmStatus status={status} retry={live.retry} tiles={12} /></Page>;
@@ -140,7 +158,7 @@ const UcAylar = () => {
     setBusy(true);
     setActionError('');
     localStorage.setItem('hd.lastName', name.trim());
-    const result = await database.cuzAlV3(name.trim(), selected, khatm.subKey, true, false);
+    const result = await database.cuzAlV3(name.trim(), selected, khatm.subKey, true, khatm.makeNewHatim);
     if (result && result.data == 200) {
       rememberPart({
         key, type: 'ucaylar', route: `/ucaylar/${key}`, title: khatm.header || plan.title,
@@ -324,7 +342,7 @@ const UcAylar = () => {
           </HeroHead>
           <HeroBody>
             <StatRow>
-              <StatLabel>{tx(`Alınan ${plan.unit}`, `${plan.units} taken`, `${plan.units} المأخوذة`)}: {takenCount} / {plan.slots}</StatLabel>
+              <StatLabel>{khatm.subKeys.length > 1 ? `${fmt(LanguageData.Kit.KhatmNo, {n: khatm.index + 1})} · ` : ''}{tx(`Alınan ${plan.unit}`, `${plan.units} taken`, `${plan.units} المأخوذة`)}: {takenCount} / {plan.slots}</StatLabel>
               <StatValue>%{percent}</StatValue>
             </StatRow>
             <Bar><span style={{width: `${percent}%`}} /></Bar>
@@ -337,16 +355,21 @@ const UcAylar = () => {
                   : tx(`Üç aylara ${daysToStart} gün var`, `${daysToStart} days until the three months`, `${daysToStart} يومًا حتى الأشهر الثلاثة`)}
               </Badge>
             </Badges>
-            {mySlots.length > 0 &&
+            {myParts.length > 0 &&
               <MineLine id="mineLine">
-                <span>{mySlots.length > 1
+                <span>{myParts.length > 1
                   ? tx(`Şu ${plan.unitsAcc} aldınız:`, `You took these ${plan.unitsAcc}:`, `أخذتَ هذه ${plan.unitsAcc}:`)
                   : tx(`Şu ${plan.unitAcc} aldınız:`, `You took this ${plan.unitAcc}:`, `أخذتَ هذا ${plan.unitAcc}:`)}</span>
-                {mySlots.map(no => (
-                  <button key={no} type="button" onClick={() => {
-                    const card = document.querySelector(`[data-mine="${no}"]`);
-                    if (card) card.scrollIntoView({behavior: 'smooth', block: 'center'});
-                  }}>{plan.slotLabel(no).title}</button>
+                {myParts.map(({subKey, no}) => (
+                  <button key={`${subKey}/${no}`} type="button" onClick={() => {
+                    setActiveSub(subKey);
+                    setTimeout(() => {
+                      const card = document.querySelector(`[data-mine="${no}"]`);
+                      if (card) card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    }, 50);
+                  }}>
+                    {khatm.subKeys.length > 1 ? `${fmt(LanguageData.Kit.KhatmNo, {n: khatm.subKeys.indexOf(subKey) + 1})} · ` : ''}{plan.slotLabel(no).title}
+                  </button>
                 ))}
               </MineLine>}
             <GhostButton id="printButton" style={{marginTop: 14}} onClick={() => setPrinting(true)}>
@@ -354,6 +377,19 @@ const UcAylar = () => {
             </GhostButton>
           </HeroBody>
         </HeroCard>
+
+        {khatm.subKeys.length > 1 &&
+          <FilterRow id="khatmTabs" style={{marginBottom: 16}}>
+            {khatm.subKeys.map((k, i) => {
+              const parts = Object.values(khatm.khatms[k].parts);
+              return (
+                <FilterChip key={k} id={`khatmTab-${i + 1}`} active={k === khatm.subKey}
+                            onClick={() => { setActiveSub(k); setSelected(null); setChartSlot(null); }}>
+                  {fmt(LanguageData.Kit.KhatmNo, {n: i + 1})} · {parts.filter(p => p.isTaken).length}/{parts.length}
+                </FilterChip>
+              );
+            })}
+          </FilterRow>}
 
         {mySlots.length > 0 && <>
           <SectionTitle>{dayIndex != null ? tx('Bugün okuyacaklarım', 'My reading today', 'قراءتي اليوم') : tx('Aldıklarım', 'What I took', 'ما أخذته')}</SectionTitle>

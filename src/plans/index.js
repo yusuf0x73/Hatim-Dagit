@@ -27,6 +27,26 @@ const readingOfPiece = (index, piecesPerJuz) => {
 // pages: kâğıt çizelgede "okunacak sayfalar" sütununa yazılan kısa bilgi (1–10 / 12 / 36. Yâsîn)
 const readingOfJuz = juz => ({title: juzLabel (juz), subtitle: pagesText (juzRange (juz)), pages: `${juzRange (juz).start}–${juzRange (juz).end}`});
 
+// 29 günlük ayın son günü: iki cüz (ay içinde tam hatim). 30 → 1 geçişinde sayfalar ikiye ayrılır.
+const readingOfTwoJuz = (a, b) => {
+  const first = juzRange (a);
+  const second = juzRange (b);
+  const joined = second.start === first.end + 1;
+  return {
+    title: tx (`${a}. ve ${b}. cüz`, `Juz ${a} and ${b}`, `الجزءان ${a} و${b}`),
+    subtitle: joined ? pagesText ({start: first.start, end: second.end})
+      : tx (`${first.start}–${first.end} ve ${second.start}–${second.end}. sayfalar`, `Pages ${first.start}–${first.end} and ${second.start}–${second.end}`,
+            `الصفحات ${first.start}–${first.end} و${second.start}–${second.end}`),
+    pages: joined ? `${first.start}–${second.end}` : `${first.start}–${first.end}, ${second.start}–${second.end}`,
+  };
+};
+
+// Günde 1 cüz, her ay aldığı cüzden başlar; ay 29 günse son gün iki cüz okunur ve ay yine tam hatimle biter
+export const juzPerDay = (slot, length) => Array.from ({length}, (_, day) => {
+  const juz = rotate (slot, day, 30);
+  return length < 30 && day === length - 1 ? readingOfTwoJuz (juz, rotate (slot, day + 1, 30)) : readingOfJuz (juz);
+});
+
 const readingOfSurah = number => {
   const surah = SURAHS[number - 1];
   return {title: `${surah.number}. ${surahLabel (surah.name)}`,
@@ -153,6 +173,7 @@ export const PLANS = {
     slotLabel: slot => readingOfJuz (slot),
     defaultRotating: true,
     reading: (slot, monthIndex, dayInMonth) => readingOfJuz (rotate (slot, dayInMonth, 30)),
+    readings: (slot, {monthDays}) => monthDays.flatMap (length => juzPerDay (slot, length)),
   },
 
   tenPagesThenJuz: {

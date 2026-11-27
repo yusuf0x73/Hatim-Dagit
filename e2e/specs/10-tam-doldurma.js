@@ -127,4 +127,45 @@ module.exports = ({test}) => {
     await a.waitText ('Bütün cüzler alındı');
     assert.equal (subKeysV3 (await dbGet (`hatim/${key}`)).length, 1);
   }, {timeout: 240000});
+
+  test ('3 aylar otomatik hatim: 60 parça dolunca 2. hatim açılır; sekmelerle geçilir, iki hatimdeki parçalar "aldınız"da', async ctx => {
+    const a = await ctx.user ();
+    await a.goto ('/');
+    await a.click ('#months3');
+    await a.click ('#tenPagesThenJuz');
+    await a.type (TITLE_INPUT, 'E2E otomatik 3 aylar');
+    await a.click ('Devam Et', {exact: true});
+    const {key} = await a.createdKey ();
+    const [subKey] = subKeysV3 (await dbGet (`hatim/${key}`));
+    // Ayrılmış linklerde sunucu bunu kendisi açar; testin kendi hatminde alan elle açılır
+    const put = await fetch (`${ctx.config.databaseUrl}/hatim/${key}/makeNewHatim.json`, {method: 'PUT', body: 'true'});
+    assert.ok (put.ok, `makeNewHatim yazılamadı: ${put.status}`);
+
+    await inBatches (range (1, 59), async no => {
+      const status = await takeDirect (ctx, 'takeCuzV3', {key, subKey, cuzNo: String (no), name: `Kişi ${no}`, alindi: 'true', ownerId: `o${no}`});
+      assert.equal (status, 200, `${no}. parça alınamadı`);
+    });
+
+    await a.goto (`/ucaylar/${key}`);
+    await a.click ('#nextFree');
+    await a.type ('#partName', 'Son okuyan');
+    await a.click ('#takeButton');
+    await waitUntil (async () => subKeysV3 (await dbGet (`hatim/${key}`)).length === 2, {timeout: 20000, message: '2. hatim açılmadı'});
+    // Sayfa canlı: sekmeler gelir, kişi parçasının olduğu 1. hatimde kalır
+    await a.page.waitForSelector ('#khatmTab-2');
+    assert.ok ((await a.page.$eval ('#khatmTab-1', el => el.innerText)).includes ('60/60'));
+    await a.click ('#khatmTab-2');
+    await a.waitText ('0 / 60');
+    await a.click ('#nextFree');
+    await a.type ('#partName', 'Yeni hatimde');
+    await a.click ('#takeButton');
+    await a.waitSheetClosed ();
+    const fresh = subKeysV3 (await dbGet (`hatim/${key}`)).find (k => k !== subKey);
+    await waitUntil (async () => (await dbGet (`hatim/${key}/${fresh}/parts/1/name`)) === 'Yeni hatimde', {message: '2. hatimde parça alınamadı'});
+    const mine = await a.page.$eval ('#mineLine', el => el.innerText);
+    assert.ok (mine.includes ('1. Hatim') && mine.includes ('2. Hatim'), mine);
+    await a.page.screenshot ({path: require ('path').join (ctx.config.outDir, 'ucaylar-otomatik-hatim.png')});
+    await sleep (1500);
+    assert.equal (subKeysV3 (await dbGet (`hatim/${key}`)).length, 2, 'tek bir yeni hatim açılmalı');
+  }, {timeout: 240000});
 };
