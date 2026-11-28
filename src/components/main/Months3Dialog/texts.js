@@ -8,7 +8,7 @@ import {tx, LOCALE} from 'strings/tx';
 import {PLANS} from 'plans';
 
 const META = {
-  eachday1part: tx ('30 cüz · her gün sıradaki cüz', '30 juz · the next juz each day', '٣٠ جزءًا · الجزء التالي كل يوم'),
+  eachday1part: tx ('30 cüz · günde 1 cüz', '30 juz · 1 juz a day', '٣٠ جزءًا · جزء يوميًا'),
   tenPagesThenJuz: tx ('60 parça (yarım cüz)', '60 parts (half a juz)', '٦٠ قسمًا (نصف جزء)'),
   fivePagesThenTenPages: tx ('120 parça (hizb, 5 sayfa)', '120 parts (quarter juz, 5 pages)', '١٢٠ قسمًا (ربع جزء، ٥ صفحات)'),
   samePage: tx ('604 sayfa', '604 pages', '٦٠٤ صفحات'),
@@ -16,9 +16,9 @@ const META = {
 };
 
 const DESCRIPTION = {
-  eachday1part: tx ('Aldığınız cüzden başlayarak her gün bir sonraki cüzü okursunuz.',
-                    'Starting from the juz you take, you read the next juz each day.',
-                    'تبدأ من الجزء الذي أخذته وتقرأ الجزء التالي كل يوم.'),
+  eachday1part: tx ('Kur\'ân\'ın 30 cüzü dağıtılır; herkes her gün 1 cüz okur.',
+                    "The 30 juz of the Qur'an are shared out; everyone reads 1 juz a day.",
+                    'تُوزَّع أجزاء القرآن الثلاثون؛ ويقرأ كل شخص جزءًا يوميًا.'),
 };
 
 export const months3Texts = () => ({

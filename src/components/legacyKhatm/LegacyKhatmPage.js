@@ -9,7 +9,7 @@
 import {juzLabel} from 'plans/quran';
 import React, {useEffect, useMemo, useState} from 'react';
 import {useHistory} from 'react-router-dom';
-import {CalendarEvent, Plus, ChevronDown, ChevronUp, Check} from 'tabler-icons-react';
+import {CalendarEvent, Plus, ChevronDown, ChevronUp, Check, Printer} from 'tabler-icons-react';
 import {showNotification} from '@mantine/notifications';
 import LocDb from '@yusuf-yeniceri/easy-storage';
 import {db} from 'backend';
@@ -19,6 +19,10 @@ import {partsProcessor} from 'localStorage/parts';
 import {rememberPart, forgetPart, rememberTitle, hideKhatm, getTicks, setTicks} from 'localStorage/myKhatms';
 import {buildSchedule, formatDate, MONTH_NAMES, juzPerDay} from 'plans';
 import {juzRange} from 'plans/quran';
+import {PLANS} from 'plans';
+import PrintSheets from 'components/ucaylar/PrintSheets';
+import {GhostButton, FilterRow, FilterChip, Wrap, SectionTitle, TodayCard, TodayBody, TodayKicker, TodayTitle, TodaySub, SmallButton} from 'components/ucaylar/styles';
+import {tx} from 'strings/tx';
 import {
   QuestionContainer, CardWrapper, GridToolbar, Legend, LegendItem, GridHint,
   RespondOuterContainer, RespondInnerContainer, ResponseItemContainer, ResponseItem, ResponseText, ResponseName, MineBadge,
@@ -142,8 +146,9 @@ const ramazanSchedule = no => {
   });
 };
 
-const months3Schedule = no =>
-  buildSchedule ('eachday1part', no, getMonths3Date ()).map (day => ({
+// rotating: false ise sabit (her gün aynı cüz); alan yoksa eski hatimler gibi dönerli
+const months3Schedule = (no, rotating) =>
+  buildSchedule ('eachday1part', no, getMonths3Date (), rotating).map (day => ({
     index: day.index,
     group: day.month,
     label: `${day.month} ${day.dayInMonth} · ${formatDate (day.date)}`,
@@ -169,10 +174,14 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
   const [confirm, setConfirm] = useState (null);
   const [editing, setEditing] = useState (false);
   const [localParts, setLocalParts] = useState (() => readLocalParts (2));
+  const [printing, setPrinting] = useState (null); // yazdırılacak alt hatim (günde 1 cüz)
+  const [, setTicksVersion] = useState (0); // çok eski hatimlerde yerel çizelge işaretlenince yeniden çiz
 
   const {api, khatms} = useMemo (() => (data ? parseKhatms (data, hatimKey) : {api: 2, khatms: []}), [data]);
   const first = khatms[0] || {};
   const isAdmin = isAdminOf (hatimKey);
+  // Günde 1 cüz: sabit mi dönerli mi (hatim oluşturulurken seçilir)
+  const months3Rotating = !(first.isMonths3 && first.isMonths3.rotating === false);
 
   useEffect (() => {
     if (status === 'ready') setLocalParts (readLocalParts (api));
@@ -262,7 +271,8 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
     }
     if (variant === 'ucaylarhergun1cuz') partsProcessor.takePart ({key: hatimKey, subKey, partId: no});
     rememberPart ({key: hatimKey, type: config.type, route: `/${config.route}/${hatimKey}`, title: first.baslik,
-                   subKey, no, label: juzLabel (no), plan: variant === 'ucaylarhergun1cuz' ? 'eachday1part' : undefined});
+                   subKey, no, label: juzLabel (no), plan: variant === 'ucaylarhergun1cuz' ? 'eachday1part' : undefined,
+                   rotating: variant === 'ucaylarhergun1cuz' ? months3Rotating : undefined});
     setLocalParts (readLocalParts (api));
   };
 
@@ -393,18 +403,38 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
 
   /* ---------- Çizelge ---------- */
 
-  const chartDays = chart ? (config.chart === 'ramazan' ? ramazanSchedule (chart.no) : months3Schedule (chart.no)) : [];
+  const chartDays = chart ? (config.chart === 'ramazan' ? ramazanSchedule (chart.no) : months3Schedule (chart.no, months3Rotating)) : [];
   // Çok eski (api 1) hatimlerde alt anahtar yok; çizelge sadece bu cihazda tutulur
-  const store = !chart ? null : api === 1
+
+  // Bir cüzün çizelge kaydı (çok eski hatimlerde yalnızca bu cihazda)
+  const storeFor = (subKey, no) => api === 1
     ? {
-        load: async () => getTicks (hatimKey, chart.no),
+        load: async () => getTicks (hatimKey, no),
         save: async (day, value) => {
-          const current = getTicks (hatimKey, chart.no).filter (d => d !== day);
-          setTicks (hatimKey, chart.no, value ? [...current, day] : current);
+          const current = getTicks (hatimKey, no).filter (d => d !== day);
+          setTicks (hatimKey, no, value ? [...current, day] : current);
+          setTicksVersion (v => v + 1);
           return true;
         },
       }
-    : chartStore ({hatimKey, subKey: chart.subKey, partNo: chart.no});
+    : chartStore ({hatimKey, subKey, partNo: no});
+
+  const store = !chart ? null : storeFor (chart.subKey, chart.no);
+
+  // Günde 1 cüz: aldığım cüzlerin bugünkü okuması (5 / 10 sayfalık 3 aylar sayfasındaki gibi)
+  const todayCards = variant !== 'ucaylarhergun1cuz' ? [] : khatms.flatMap ((k, index) =>
+    cevaplar (k).filter (c => c.alindi && isMine (k.subKey, c.cevap)).map (c => {
+      const days = months3Schedule (c.cevap, months3Rotating);
+      const day = days[todayIndex != null ? todayIndex : 0];
+      const done = api === 1 ? todayIndex != null && getTicks (hatimKey, c.cevap).includes (todayIndex) : readToday (k, c.cevap);
+      return {subKey: k.subKey, no: c.cevap, day, done,
+              label: khatms.length > 1 ? `${fmt (Language.Kit.KhatmNo, {n: index + 1})} · ${juzLabel (c.cevap)}` : juzLabel (c.cevap)};
+    }));
+
+  const markToday = async (card, value) => {
+    const ok = await storeFor (card.subKey, card.no).save (todayIndex, value);
+    if (!ok) showNotification ({color: 'red', message: Language.Kit.ChartSaveFailed});
+  };
 
   return (
     <QuestionContainer>
@@ -412,8 +442,36 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
         <KhatmCard title={first.baslik} description={first.description}
                    taken={takenCount} total={all.length} duaDate={first.bitisTarihi}
                    myParts={myParts} isAdmin={isAdmin}
+                   mineLabel={variant === 'ucaylarhergun1cuz' ? tx ('Şu cüzleri aldınız:', 'You took these juz:', 'أخذتَ هذه الأجزاء:') : undefined}
+                   footer={variant === 'ucaylarhergun1cuz' &&
+                     <GhostButton id="printButton" style={{marginTop: 16}}
+                                  onClick={() => setPrinting ((khatms.find (k => open[k.subKey]) || khatms[khatms.length - 1]).subKey)}>
+                       <Printer size={20} /> {tx ('Çizelgeleri yazdır (Recep, Şaban, Ramazan)', "Print the charts (Rajab, Sha'ban, Ramadan)", 'اطبع الجداول (رجب، شعبان، رمضان)')}
+                     </GhostButton>}
                    onDelete={() => setConfirm ('delete')} onEdit={() => setEditing (true)} />
       </CardWrapper>
+
+      {todayCards.length > 0 &&
+        <Wrap style={{paddingBottom: 0}}>
+          <SectionTitle>{todayIndex != null ? tx ('Bugün okuyacaklarım', 'My reading today', 'قراءتي اليوم') : tx ('Aldıklarım', 'What I took', 'ما أخذته')}</SectionTitle>
+          {todayCards.map (card => (
+            <TodayCard key={`${card.subKey}/${card.no}`} done={card.done} data-mine={card.no} style={{cursor: 'pointer'}}
+                       onClick={() => setChart ({subKey: card.subKey, no: card.no})}>
+              <TodayBody>
+                <TodayKicker>{months3Rotating ? `${tx ('Aldığınız', 'You took', 'أخذتَ')}: ${card.label}` : `${tx ('Her gün', 'Every day', 'كل يوم')} · ${card.label}`}</TodayKicker>
+                <TodayTitle>{card.day.title}</TodayTitle>
+                <TodaySub>{todayIndex != null ? card.day.subtitle : `${tx ('İlk gün', 'First day', 'اليوم الأول')} (${card.day.label}): ${card.day.subtitle}`}</TodaySub>
+              </TodayBody>
+              {todayIndex != null &&
+                <SmallButton filled={card.done} onClick={event => { event.stopPropagation (); markToday (card, !card.done); }}>
+                  <Check size={18} /> {card.done ? tx ('Okundu', 'Read', 'قُرئ') : tx ('Okudum', 'I read it', 'قرأت')}
+                </SmallButton>}
+              <SmallButton aria-label={tx ('Çizelge', 'Chart', 'الجدول')} onClick={event => { event.stopPropagation (); setChart ({subKey: card.subKey, no: card.no}); }}>
+                <CalendarEvent size={18} />
+              </SmallButton>
+            </TodayCard>
+          ))}
+        </Wrap>}
 
       <GridToolbar>
         <Legend>
@@ -499,7 +557,7 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
         <ChartSheet visible={chart != null} onClose={() => setChart (null)}
                     title={chart ? `${juzLabel (chart.no)} · ${config.chart === 'ramazan' ? Language.Kit.RamazanChart : Language.Kit.ChartTitle}` : ''}
                     subtitle={first.baslik}
-                    hint={config.chart === 'ramazan' ? Language.Kit.RamazanHint : Language.Kit.Months3Hint}
+                    hint={config.chart === 'ramazan' ? Language.Kit.RamazanHint : months3Rotating ? Language.Kit.Months3Hint : PLANS.eachday1part.fixedText}
                     days={chartDays}
                     canEdit={chart ? isMine (chart.subKey, chart.no) : false}
                     reactions={chart && isTakenPart (chart.subKey, chart.no) &&
@@ -522,6 +580,25 @@ const LegacyKhatmPage = ({variant = 'ramazan'}) => {
       <TakenSheet taken={justTaken} onClose={() => setJustTaken (null)} />
 
       <ShareActions title={first.baslik} />
+      {printing && (() => {
+        const index = Math.max (khatms.findIndex (k => k.subKey === printing), 0);
+        const khatm = khatms[index];
+        const parts = Object.fromEntries (cevaplar (khatm).map (c => [String (c.cevap), {name: c.isim || '', isTaken: !!c.alindi}]));
+        return (
+          <PrintSheets plan={PLANS.eachday1part} onDone={() => setPrinting (null)}
+                       khatmLabel={khatms.length > 1 ? fmt (Language.Kit.KhatmNo, {n: index + 1}) : undefined}
+                       khatm={{header: first.baslik, plan: 'eachday1part', rotating: months3Rotating, period: getMonths3Date (), parts}}
+                       chooser={khatms.length > 1 &&
+                         <FilterRow style={{marginBottom: 12}}>
+                           {khatms.map ((k, i) => (
+                             <FilterChip key={k.subKey} type="button" id={`printKhatm-${i + 1}`} active={k.subKey === khatm.subKey}
+                                         onClick={() => setPrinting (k.subKey)}>
+                               {fmt (Language.Kit.KhatmNo, {n: i + 1})} · {cevaplar (k).filter (c => c.alindi).length}/30
+                             </FilterChip>
+                           ))}
+                         </FilterRow>} />
+        );
+      }) ()}
     </QuestionContainer>
   );
 };

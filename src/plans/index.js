@@ -150,6 +150,14 @@ const PAGE_WORDS = {
   units: tx ('Sayfalar', 'Pages', 'الصفحات'),
   takeText: tx ('Sayfayı al', 'Take this page', 'خذ هذه الصفحة'),
 };
+const JUZ_WORDS = {
+  unitKind: 'juz',
+  unit: tx ('cüz', 'juz', 'جزء'),
+  unitAcc: tx ('cüzü', 'juz', 'الجزء'),
+  unitsAcc: tx ('cüzleri', 'juz', 'الأجزاء'),
+  units: tx ('Cüzler', 'Juz', 'الأجزاء'),
+  takeText: tx ('Cüzü al', 'Take this juz', 'خذ هذا الجزء'),
+};
 const SURAH_WORDS = {
   unitKind: 'surah',
   unit: tx ('sûre', 'surah', 'سورة'),
@@ -170,9 +178,18 @@ export const PLANS = {
     id: 'eachday1part',
     title: tx ('3 aylar boyunca günde 1 cüz', '1 juz a day for the three months', 'جزء يوميًا طوال الأشهر الثلاثة'),
     slots: 30,
+    ...JUZ_WORDS,
     slotLabel: slot => readingOfJuz (slot),
     defaultRotating: true,
-    reading: (slot, monthIndex, dayInMonth) => readingOfJuz (rotate (slot, dayInMonth, 30)),
+    rotatingText: tx ('Her ay aldığınız cüzden başlayıp her gün bir sonraki cüzü okursunuz; her ay bir hatim biter. Ay 29 gün çekerse son gün iki cüz okunur.',
+                      'Each month you start from the juz you take and read the next juz every day; a khatm is completed each month. If the month has 29 days, two juz are read on the last day.',
+                      'في كل شهر تبدأ من الجزء الذي أخذته وتقرأ الجزء التالي كل يوم؛ فتُختم ختمة كل شهر. وإن كان الشهر ٢٩ يومًا يُقرأ جزءان في اليوم الأخير.'),
+    fixedText: tx ('Aldığınız cüzü üç ay boyunca her gün okursunuz. Bütün cüzler alındığında her gün bir hatim tamamlanır.',
+                   'You read the juz you take every day for three months. Once all juz are taken, a khatm is completed every day.',
+                   'تقرأ الجزء الذي أخذته كل يوم طوال ثلاثة أشهر. وعند أخذ كل الأجزاء تُختم ختمة كاملة كل يوم.'),
+    // Sabit: her gün aldığı cüz; dönerli: her ay aldığı cüzden başlayıp sıradaki
+    reading: (slot, monthIndex, dayInMonth, dayInPeriod, ramadanStart, rotating) =>
+      readingOfJuz (rotating === false ? slot : rotate (slot, dayInMonth, 30)),
     readings: (slot, {monthDays}) => monthDays.flatMap (length => juzPerDay (slot, length)),
   },
 

@@ -28,6 +28,10 @@ const legendOf = (planId, rotating) => {
   const base = tx ('Sayfa numaraları Diyanet mushafına göredir. Okuduğunuz günün kutusunu işaretleyin.',
                    'Page numbers follow the Diyanet mushaf. Tick the box for each day you read.',
                    'أرقام الصفحات حسب مصحف ديانت. ضع علامة في مربع اليوم الذي قرأت فيه.');
+  if (planId === 'eachday1part' && !rotating) return `${tx ('Her gün aldığınız cüzü okursunuz.', 'You read the juz you took every day.', 'تقرأ الجزء الذي أخذته كل يوم.')} ${base}`;
+  if (planId === 'eachday1part') return `${tx ('Her ay aldığınız cüzden başlanır, her gün bir sonraki cüz okunur; her ay bir hatim biter. Ay 29 gün çekerse son gün iki cüz okunur.',
+    'Each month you start from the juz you took and read the next juz every day; a khatm is completed each month. If the month has 29 days, two juz are read on the last day.',
+    'في كل شهر تبدأ من الجزء الذي أخذته وتقرأ الجزء التالي كل يوم؛ فتُختم ختمة كل شهر. وإن كان الشهر ٢٩ يومًا يُقرأ جزءان في اليوم الأخير.')} ${base}`;
   if (!rotating) return base;
   if (planId === 'tenPagesThenJuz') return `${tx ("Recep–Şaban'da günde 10 sayfa ile bir hatim, Ramazan'da kalınan yerden günde 20 sayfa ile bir hatim daha biter; gün yetmezse son iki günde fazlası okunur.",
     "One khatm with 10 pages a day in Rajab–Sha'ban, and another in Ramadan from where you left off with 20 pages a day; if there are not enough days, the extra is read on the last two days.",
@@ -38,7 +42,8 @@ const legendOf = (planId, rotating) => {
   return base;
 };
 
-const PrintSheets = ({khatm, plan, onDone}) => {
+// chooser: birden fazla hatim varsa pencerenin üstünde hangisinin yazdırılacağı; khatmLabel: sayfa başlığında hatim numarası
+const PrintSheets = ({khatm, plan, onDone, chooser, khatmLabel}) => {
   const [who, setWho] = useState (null); // 'taken' | 'all' | 'picked'
   const [picking, setPicking] = useState (false);
   const [picked, setPicked] = useState ([]); // seçilen isimler
@@ -82,6 +87,7 @@ const PrintSheets = ({khatm, plan, onDone}) => {
                `A square card for each person showing Rajab, Sha'ban and Ramadan together; ${PER_PAGE} cards fit on an A4 page and are easy to cut out. Free parts are printed with a blank name field to fill in by hand.`,
                `بطاقة مربعة لكل شخص تعرض رجب وشعبان ورمضان معًا؛ تتسع صفحة A4 لـ${PER_PAGE} بطاقات ويسهل قصّها. تُطبع الأقسام المتاحة بخانة اسم فارغة لتُكتب باليد.`)}
         </SheetText>
+        {chooser}
         {!picking ? (
           <ButtonStack>
             <SectionLabel>{tx ('Alınanlar', 'Taken', 'المأخوذة')}</SectionLabel>
@@ -139,7 +145,7 @@ const PrintSheets = ({khatm, plan, onDone}) => {
               <PageHead>
                 <div>
                   <h1>{khatm.header || plan.title}</h1>
-                  <p>{plan.title}{plan.rotatingText ? ` · ${rotating ? tx ('Dönerli', 'Rotating', 'دوّارة') : tx ('Sabit', 'Fixed', 'ثابتة')}` : ''} · {longDate (toDate (period.startingDate))} – {longDate (periodEndDate (period))}</p>
+                  <p>{khatmLabel ? `${khatmLabel} · ` : ''}{plan.title}{plan.rotatingText ? ` · ${rotating ? tx ('Dönerli', 'Rotating', 'دوّارة') : tx ('Sabit', 'Fixed', 'ثابتة')}` : ''} · {longDate (toDate (period.startingDate))} – {longDate (periodEndDate (period))}</p>
                 </div>
                 <span>{pageIndex + 1} / {pages.length}</span>
               </PageHead>

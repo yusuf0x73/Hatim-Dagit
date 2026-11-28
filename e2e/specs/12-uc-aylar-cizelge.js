@@ -126,4 +126,121 @@ module.exports = ({test}) => {
     await a.page.pdf ({path: pdf, format: 'A4', printBackground: true, preferCSSPageSize: true});
     await a.page.screenshot ({path: path.join (config.outDir, 'ucaylar-a4-sayfa1.png'), clip: {x: 0, y: 0, width: 794, height: 1123}});
   }, {timeout: 150000});
+
+  test ('3 aylar günde 1 cüz: çıktı alınır (herkes / kişi seçerek), 29 günlük ayın son günü iki cüz, A4\'e 6 kart', async ({user}) => {
+    const a = await user ();
+    await a.goto ('/');
+    await a.click ('#months3');
+    await a.click ('#eachday1part');
+    await a.type (TITLE_INPUT, 'E2E günde 1 cüz çıktı');
+    await a.click ('Devam Et', {exact: true});
+    const {key} = await a.createdKey ();
+    const subKey = Object.values ((await dbGet (`hatim/${key}`)).khatmSubKeys)[0];
+
+    await a.goto (`/ucaylarhergun1cuz/${key}`);
+    for (const [no, name] of [[1, 'Ahmet'], [2, 'Ahmet'], [7, 'Zeynep']]) {
+      await a.click (`[data-part="${no}"]`);
+      await a.type ('#partName', name);
+      await a.click ('#takeButton');
+      await a.waitSheetClosed ();
+      await waitUntil (async () => {
+        const hatim = await dbGet (`hatim/${key}/${subKey}`);
+        return [1, 2, 3].flatMap (i => hatim[i].cevaplar).some (c => c.cevap === String (no) && c.alindi && c.isim === name);
+      }, {message: `${no}. cüz alınmadı`});
+    }
+    await a.page.keyboard.press ('Escape');
+
+    await a.page.evaluate (() => { window.print = () => {}; });
+    await a.click ('#printButton');
+    await a.waitText ('Herkesinkini yazdır (3 kart');
+    await a.click ('#printPick');
+    await a.page.waitForSelector ('[data-person]');
+    assert.deepEqual ((await a.page.$$eval ('[data-person]', els => els.map (el => el.getAttribute ('data-person')))).sort (), ['Ahmet', 'Zeynep']);
+    await a.click ('[data-person="Ahmet"]');
+    await a.waitText ('Seçilenleri yazdır (1 kişi, 2 kart');
+    await a.click ('#printPicked');
+    await a.page.waitForSelector ('.hd-print [data-print-slot]');
+    assert.deepEqual (await a.page.$$eval ('.hd-print [data-print-slot]', els => els.map (el => el.getAttribute ('data-print-slot'))), ['1', '2']);
+
+    // 1. cüzün kartı: her ay 1. cüzden başlar; ay 29 günse son gün iki cüz
+    const card = await a.page.$eval ('.hd-print [data-print-slot="1"]', el => el.innerText);
+    assert.ok (card.includes ('Ahmet'), card);
+    const monthDays = await (async () => {
+      // Kartta her ayın sütunu: 30 satır; 29 günlük ayda son satırda "561–604"
+      const rows = await a.page.$$eval ('.hd-print [data-print-slot="1"] tbody tr', trs => trs.map (tr => [...tr.querySelectorAll ('td.pages')].map (td => td.innerText)));
+      return rows;
+    }) ();
+    assert.equal (monthDays[0][0], '1–20', 'Recep 1: 1. cüz');
+    const lastRamazan = monthDays.map (r => r[2]).filter (Boolean).pop ();
+    assert.ok (lastRamazan === '561–604' || lastRamazan === '581–604', `Ramazan son gün: ${lastRamazan}`);
+
+    // Hepsi: 30 kart, A4'te 6'şar → 5 sayfa
+    await a.goto (`/ucaylarhergun1cuz/${key}`);
+    await a.page.waitForSelector ('#printButton');
+    await a.page.setViewport ({width: 794, height: 1123, deviceScaleFactor: 1, isMobile: true, hasTouch: true});
+    await a.page.evaluate (() => { window.print = () => {}; });
+    await a.click ('#printButton');
+    await a.click ('#printAll');
+    await a.page.waitForSelector ('.hd-print section');
+    await a.page.emulateMediaType ('print');
+    const info = await a.page.evaluate (() => {
+      const pages = [...document.querySelectorAll ('.hd-print section')];
+      const top = pages[0].getBoundingClientRect ().top;
+      const blocks = [...pages[0].querySelectorAll ('[data-print-slot]')];
+      return {pages: pages.length, perPage: blocks.length, lastBottom: blocks[blocks.length - 1].getBoundingClientRect ().bottom - top,
+              footerTop: pages[0].querySelector ('footer').getBoundingClientRect ().top - top};
+    });
+    assert.equal (info.perPage, 6);
+    assert.equal (info.pages, 5);
+    assert.ok (info.lastBottom <= info.footerTop, 'son kart sayfa altına taşıyor');
+    await a.page.pdf ({path: path.join (config.outDir, 'gunde-1-cuz-cizelgeler.pdf'), format: 'A4', printBackground: true, preferCSSPageSize: true});
+    await a.page.screenshot ({path: path.join (config.outDir, 'gunde-1-cuz-a4-sayfa1.png'), clip: {x: 0, y: 0, width: 794, height: 1123}});
+  }, {timeout: 150000});
+
+  test ('3 aylar günde 1 cüz: "sabit" seçilir; aldığım cüz kartı ve "aldınız" üstte; masaüstünde yazdırma penceresi', async ({user}) => {
+    const a = await user ();
+    await a.goto ('/');
+    await a.click ('#months3');
+    await a.click ('#eachday1part');
+    await a.page.waitForSelector ('#fixed');
+    assert.equal (await a.page.$eval ('#rotating', el => el.getAttribute ('aria-checked')), 'true', 'varsayılan dönerli olmalı');
+    await a.click ('#fixed');
+    await a.type (TITLE_INPUT, 'E2E günde 1 cüz sabit');
+    await a.click ('Devam Et', {exact: true});
+    const {key} = await a.createdKey ();
+    const hatim = await dbGet (`hatim/${key}`);
+    const subKey = Object.values (hatim.khatmSubKeys)[0];
+    assert.deepEqual (hatim[subKey].isMonths3, {eachday1part: true, rotating: false});
+
+    await a.goto (`/ucaylarhergun1cuz/${key}`);
+    await a.click ('[data-part="5"]');
+    await a.type ('#partName', 'Hatice');
+    await a.click ('#takeButton');
+    await a.waitSheetClosed ();
+    await a.page.keyboard.press ('Escape');
+    await a.waitText ('Şu cüzleri aldınız');
+    const card = (await a.page.$eval ('[data-mine="5"]', el => el.innerText)).toLocaleLowerCase ('tr-TR');
+    assert.ok (card.includes ('her gün') && card.includes ('5. cüz') && card.includes ('81–100'), card);
+
+    // Sabit: çizelgede her gün aynı cüz
+    await a.click ('[data-mine="5"]');
+    await a.page.waitForSelector ('[role=dialog] button[aria-pressed]');
+    const titles = (await a.page.$$eval ('[role=dialog] button[aria-pressed]', els => els.map (el => el.innerText))).filter (t => t.includes (' · '));
+    const odd = titles.filter (t => !t.includes ('5. cüz') || t.includes ('6. cüz'));
+    assert.ok (titles.length === 89 && odd.length === 0, `gün sayısı ${titles.length}; farklı: ${JSON.stringify (odd.slice (0, 3))}`);
+    await a.page.keyboard.press ('Escape');
+    await a.page.screenshot ({path: path.join (config.outDir, 'gunde-1-cuz-mobil.png'), fullPage: false});
+
+    // Masaüstü
+    await a.page.setViewport ({width: 1366, height: 900, deviceScaleFactor: 1, isMobile: true, hasTouch: true});
+    await sleepMs (500);
+    await a.page.screenshot ({path: path.join (config.outDir, 'gunde-1-cuz-masaustu.png')});
+    await a.page.evaluate (() => { window.print = () => {}; });
+    await a.click ('#printButton');
+    await a.waitText ('Herkesinkini yazdır (1 kart');
+    await sleepMs (400);
+    await a.page.screenshot ({path: path.join (config.outDir, 'gunde-1-cuz-yazdir-masaustu.png')});
+  }, {timeout: 150000});
 };
+
+const sleepMs = ms => new Promise (resolve => setTimeout (resolve, ms));

@@ -71,7 +71,7 @@ const lines = text => String (text).split ('\n').map ((line, i) => <p key={i}>{l
  * Hatmi oluşturan kişi için sil / değiştir butonları.
  */
 const KhatmCard = ({title, description, taken, total, duaDate, badges = [], myParts = [], isAdmin, onDelete, onEdit,
-                    takenLabel, leftLabel, mineLabel}) => {
+                    takenLabel, leftLabel, mineLabel, footer}) => {
   const {classes} = useStyles ();
   const progress = total > 0 ? (taken / total) * 100 : 0;
   const dua = duaText (duaDate);
@@ -134,6 +134,7 @@ const KhatmCard = ({title, description, taken, total, duaDate, badges = [], myPa
         </>}
 
         {total > 0 && left <= 0 && <div className={classes.completed}>{Language.CuzGrid.Completed}</div>}
+        {footer}
       </div>
     </Paper>
   );

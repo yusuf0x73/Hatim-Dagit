@@ -69,7 +69,8 @@ const Months3Dialog = ({months3DialogVisible, setMonths3DialogVisible, setHatimK
     let _dateString =  _date.getFullYear() + "-" + ("0"+(_date.getMonth()+1)).slice(-2) + "-" + ("0" + _date.getDate()).slice(-2)
 
     let _hatimKey = await database.yeniHatim(hatimKonu, _dateString, false, false,
-                                            hatimDescription, makeNewHatim, hatimCount, {eachday1part: true});
+                                            hatimDescription, makeNewHatim, hatimCount,
+                                            {eachday1part: true, rotating: isRotating('eachday1part', rotating)});
     setHatimKey(_hatimKey);
     linkReady("ucaylarhergun1cuz", _hatimKey);
   }
